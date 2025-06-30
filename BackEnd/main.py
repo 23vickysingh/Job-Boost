@@ -6,6 +6,9 @@ from . import schemas, hashing, models, tokens
 
 app = FastAPI()
 
+# Ensure all database tables are created on startup
+Base.metadata.create_all(bind=engine)
+
 @app.get("/")
 def home():
     return "working"
