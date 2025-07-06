@@ -1,42 +1,31 @@
-from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
-from .database import get_db, engine, Base
-from . import schemas, hashing, models, tokens
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+from .routers import user, profile
+from .database import Base, engine
 
-# Ensure all database tables are created on startup
+# Create all tables
 Base.metadata.create_all(bind=engine)
 
-@app.get("/")
-def home():
-    return "working"
+app = FastAPI(
+    title="Job Search Assistant API",
+    description="Backend for job search assistant platform",
+    version="1.0.0"
+)
 
+# Enable CORS (adjust origins for frontend later)
+origins = [
+    "http://localhost:3000",  # React frontend default
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.post("/signup")
-def signup(request: schemas.User, db: Session = Depends(get_db)):
-    hashedPassword = hashing.Hash.bcrypt(request.password)
-    new_user = models.User(email=request.email, password=hashedPassword)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    print(new_user)
-    return new_user
-
-
-
-@app.post("/login")
-def login(request: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == request.username).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Blog with {request.username} not found")
-    if not hashing.Hash.verify(user.password, request.password):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Password Incorrect!")
-    
-    # access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = tokens.create_access_token(
-        data={"sub": user.email}
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+# Include routers
+app.include_router(user.router)
+app.include_router(profile.router)
