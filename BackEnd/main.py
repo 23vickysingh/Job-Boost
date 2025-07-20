@@ -14,8 +14,9 @@ app = FastAPI(
 )
 
 # Enable CORS (adjust origins for frontend later)
+# Allow requests from the development frontend served by Vite
 origins = [
-    "http://localhost:3000",  # React frontend default
+    "http://localhost:8080",
 ]
 
 app.add_middleware(

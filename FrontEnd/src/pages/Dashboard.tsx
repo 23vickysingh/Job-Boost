@@ -31,14 +31,14 @@ import JobMatchesList from '@/components/dashboard/JobMatchesList';
 import ApplicationsList from '@/components/dashboard/ApplicationsList';
 import AnalyticsDashboard from '@/components/dashboard/AnalyticsDashboard';
 
-const { data: profile } = useQuery({
-  queryKey: ["profile"],
-  queryFn: fetchProfile,
-});
-
 const Dashboard = () => {
   const [activeTab, setActiveTab] = React.useState("matches");
   const [isEditingProfile, setIsEditingProfile] = React.useState(false);
+  // Fetch the current user's profile once the dashboard is rendered
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: fetchProfile,
+  });
   
   return (
     <div className="min-h-screen flex flex-col">
