@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Upload, FileText, Check, AlertCircle } from "lucide-react";
 import Navbar from '@/components/Navbar';
+import { uploadProfile } from "@/lib/api";
 
 const ResumeUpload = () => {
   const navigate = useNavigate();
@@ -60,28 +61,42 @@ const ResumeUpload = () => {
     toast.success(`File "${file.name}" selected`);
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!file) return;
-    
+
+    const form =  new FormData();
+    form.append("full_name", "John Doe");
+    form.append("interested_role", "Backend Engineer");
+    form.append("experience", "3");
+    form.append("resume", file);
+
     setIsUploading(true);
+    await uploadProfile(form);
     setUploadProgress(0);
+
+    setIsUploading(false);
+    setUploadComplete(true);
+    toast.success("Resume uploaded successfully!");
+    setTimeout(() => {
+      navigate('/dashboard');
+    }, 2000);
     
     // Simulating upload progress
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          setUploadComplete(true);
-          toast.success("Resume uploaded successfully!");
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 2000);
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 300);
+    // const interval = setInterval(() => {
+    //   setUploadProgress((prev) => {
+    //     if (prev >= 100) {
+    //       clearInterval(interval);
+    //       setIsUploading(false);
+    //       setUploadComplete(true);
+    //       toast.success("Resume uploaded successfully!");
+    //       setTimeout(() => {
+    //         navigate('/dashboard');
+    //       }, 2000);
+    //       return 100;
+    //     }
+    //     return prev + 10;
+    //   });
+    // }, 300);
   };
 
   const resetUpload = () => {
@@ -89,6 +104,22 @@ const ResumeUpload = () => {
     setUploadProgress(0);
     setUploadComplete(false);
   };
+
+  // const doUpload = async () => {
+  //   if (!file) return;
+  //   const form = new FormData();
+  //   /** In a real UI you‘d gather these from inputs; here we hardcode/demo */
+  //   form.append("full_name", "John Doe");
+  //   form.append("interested_role", "Backend Engineer");
+  //   form.append("experience", "3");
+  //   form.append("resume", file);
+
+  //   setIsUploading(true);
+  //   await uploadProfile(form); // ← hits /profile/
+  //   setIsUploading(false);
+  //   toast.success("Resume uploaded & profile saved");
+  //   navigate("/dashboard");
+  // };
 
   return (
     <div className="min-h-screen flex flex-col">

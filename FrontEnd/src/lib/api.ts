@@ -1,0 +1,30 @@
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: "http://localhost:8000", // FastAPI root
+});
+
+// Attach token automatically (if present)
+api.interceptors.request.use((cfg) => {
+  const token = localStorage.getItem("token");
+  if (token) cfg.headers.Authorization = `Bearer ${token}`;
+  return cfg;
+});
+
+export default api;
+
+/* Convenience wrappers */
+export const register = (email: string, password: string) =>
+  api.post("/user/register", { email, password });
+
+export const login = (email: string, password: string) =>
+  api.post(
+    "/user/login",
+    new URLSearchParams({ username: email, password }), // OAuth2PasswordRequestForm
+    { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+  );
+
+export const uploadProfile = (form: FormData) =>
+  api.post("/profile/", form);
+
+export const fetchProfile = () => api.get("/profile/");

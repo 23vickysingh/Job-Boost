@@ -4,13 +4,23 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 import Navbar from '@/components/Navbar';
 import AuthForm from '@/components/AuthForm';
+import { useAuth } from "@/contexts/AuthContext";
 
 const SignUp = () => {
+  const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // In a real app, you would handle the sign-up logic here
+    const fd = new FormData(e.currentTarget);
+    const email = fd.get("email") as string;
+    const password = fd.get("password") as string;
+    const confirm = fd.get("confirm") as string;
+
+    if (password !== confirm) {
+      return;
+    }
+    await register(email, password);
     toast.success("Account created successfully! Redirecting to dashboard...");
     setTimeout(() => navigate('/dashboard'), 2000);
   };

@@ -1,5 +1,9 @@
 
 import React from 'react';
+
+import { useQuery } from "@tanstack/react-query";
+import { fetchProfile } from "@/lib/api";
+
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { 
@@ -26,6 +30,11 @@ import DashboardStats from '@/components/dashboard/DashboardStats';
 import JobMatchesList from '@/components/dashboard/JobMatchesList';
 import ApplicationsList from '@/components/dashboard/ApplicationsList';
 import AnalyticsDashboard from '@/components/dashboard/AnalyticsDashboard';
+
+const { data: profile } = useQuery({
+  queryKey: ["profile"],
+  queryFn: fetchProfile,
+});
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = React.useState("matches");

@@ -31,13 +31,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
         {!isSignIn && (
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
-            <Input id="name" type="text" placeholder="John Doe" required />
+            <Input id="name" name='name' type="text" placeholder="John Doe" required />
           </div>
         )}
 
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="your@email.com" required />
+          <Input id="email" name='email' type="email" placeholder="your@email.com" required />
         </div>
 
         <div className="space-y-2">
@@ -52,13 +52,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
               </Link>
             )}
           </div>
-          <Input id="password" type="password" required />
+          <Input id="password" name='password' type="password" required />
         </div>
 
         {!isSignIn && (
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input id="confirmPassword" type="password" required />
+            <Input id="confirmPassword" name='confirm' type="password" required />
           </div>
         )}
 
