@@ -6,7 +6,10 @@ from sqlalchemy.orm import Session
 from .. import models, database
 from .tokens import verify_access_token
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+# OAuth2PasswordBearer expects the full login URL relative to the API root.
+# Our login route lives under the /user prefix, so we specify that here to
+# ensure FastAPI generates the correct OpenAPI docs and token retrieval works.
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/login")
 
 def get_db():
     db = database.SessionLocal()
