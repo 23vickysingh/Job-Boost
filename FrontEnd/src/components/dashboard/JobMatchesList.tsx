@@ -13,38 +13,7 @@ import {
 } from "lucide-react";
 
 // Mock data for the job matches
-const initialJobMatches = [
-  {
-    id: 1,
-    title: "Senior Front-End Developer",
-    company: "TechCorp Inc.",
-    location: "San Francisco, CA",
-    salary: "$120,000 - $150,000",
-    matchScore: 92,
-    posted: "2 days ago",
-    applied: false
-  },
-  {
-    id: 2,
-    title: "Full Stack Engineer",
-    company: "InnovateTech",
-    location: "Remote",
-    salary: "$110,000 - $140,000",
-    matchScore: 88,
-    posted: "1 day ago",
-    applied: false
-  },
-  {
-    id: 3,
-    title: "React Developer",
-    company: "WebSolutions LLC",
-    location: "New York, NY",
-    salary: "$105,000 - $130,000",
-    matchScore: 85,
-    posted: "3 days ago",
-    applied: false
-  },
-];
+const initialJobMatches: any[] = [];
 
 const JobMatchesList: React.FC = () => {
   const [jobMatches, setJobMatches] = useState(initialJobMatches);

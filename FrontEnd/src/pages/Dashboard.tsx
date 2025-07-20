@@ -4,7 +4,7 @@ import React from 'react';
 import { useQuery } from "@tanstack/react-query";
 import { fetchProfile } from "@/lib/api";
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
@@ -30,10 +30,18 @@ import DashboardStats from '@/components/dashboard/DashboardStats';
 import JobMatchesList from '@/components/dashboard/JobMatchesList';
 import ApplicationsList from '@/components/dashboard/ApplicationsList';
 import AnalyticsDashboard from '@/components/dashboard/AnalyticsDashboard';
+import { useAuth } from "@/contexts/AuthContext";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = React.useState("matches");
   const [isEditingProfile, setIsEditingProfile] = React.useState(false);
+  const { token } = useAuth();
+  const navigate = useNavigate();
+  React.useEffect(() => {
+    if (!token) {
+      navigate("/signin");
+    }
+  }, [token, navigate]);
   // Fetch the current user's profile once the dashboard is rendered
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -69,8 +77,8 @@ const Dashboard = () => {
           </div>
           
           <DashboardStats />
-          
-          <UserProfile onEditClick={() => setIsEditingProfile(true)} />
+
+          <UserProfile profile={profile} onEditClick={() => setIsEditingProfile(true)} />
           
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-6">

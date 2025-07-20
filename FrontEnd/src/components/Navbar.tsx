@@ -3,11 +3,13 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sun, Moon, Menu, X } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
-	const [isDarkMode, setIsDarkMode] = useState(false);
-	const [isMenuOpen, setIsMenuOpen] = useState(false);
-	const location = useLocation();
+        const [isDarkMode, setIsDarkMode] = useState(false);
+        const [isMenuOpen, setIsMenuOpen] = useState(false);
+        const location = useLocation();
+        const { token, logout } = useAuth();
 
 	useEffect(() => {
 		const isDark = localStorage.getItem("theme") === "dark";
@@ -85,28 +87,35 @@ const Navbar = () => {
 							>
 								FAQ
 							</Link>
-							<Link
-								to="/dashboard"
-								className={`text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 ${location.pathname === "/dashboard"
-										? "text-blue-600 dark:text-blue-400"
-										: ""
-									}`}
-							>
-								Dashboard
-							</Link>
-							<Link to="/signin">
-								<Button variant="outline" className="mr-2">
-									Sign In
-								</Button>
-							</Link>
-							<Link to="/signup">
-								<Button>Sign Up</Button>
-							</Link>
-							<button
-								onClick={toggleDarkMode}
-								className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-								aria-label="Toggle dark mode"
-							>
+                                                        {token ? (
+                                                                <>
+                                                                        <Link
+                                                                                to="/dashboard"
+                                                                                className={`text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 ${location.pathname === "/dashboard" ? "text-blue-600 dark:text-blue-400" : ""}`}
+                                                                        >
+                                                                                Dashboard
+                                                                        </Link>
+                                                                        <Button variant="outline" onClick={logout} className="mr-2">
+                                                                                Sign Out
+                                                                        </Button>
+                                                                </>
+                                                        ) : (
+                                                                <>
+                                                                        <Link to="/signin">
+                                                                                <Button variant="outline" className="mr-2">
+                                                                                        Sign In
+                                                                                </Button>
+                                                                        </Link>
+                                                                        <Link to="/signup">
+                                                                                <Button>Sign Up</Button>
+                                                                        </Link>
+                                                                </>
+                                                        )}
+                                                        <button
+                                                                onClick={toggleDarkMode}
+                                                                className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+                                                                aria-label="Toggle dark mode"
+                                                        >
 								{isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
 							</button>
 						</div>
@@ -143,30 +152,43 @@ const Navbar = () => {
 						>
 							About
 						</Link>
-						<Link
-							to="/dashboard"
-							className={`block px-3 py-2 rounded-md text-base font-medium ${location.pathname === "/dashboard"
-									? "text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800"
-									: "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-								}`}
-							onClick={toggleMenu}
-						>
-							Dashboard
-						</Link>
-						<Link
-							to="/signin"
-							className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-							onClick={toggleMenu}
-						>
-							Sign In
-						</Link>
-						<Link
-							to="/signup"
-							className="block px-3 py-2 rounded-md text-base font-medium bg-blue-600 text-white hover:bg-blue-700"
-							onClick={toggleMenu}
-						>
-							Sign Up
-						</Link>
+                                                {token ? (
+                                                        <>
+                                                                <Link
+                                                                        to="/dashboard"
+                                                                        className={`block px-3 py-2 rounded-md text-base font-medium ${location.pathname === "/dashboard" ? "text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
+                                                                        onClick={toggleMenu}
+                                                                >
+                                                                        Dashboard
+                                                                </Link>
+                                                                <button
+                                                                        onClick={() => {
+                                                                                logout();
+                                                                                toggleMenu();
+                                                                        }}
+                                                                        className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                                                >
+                                                                        Sign Out
+                                                                </button>
+                                                        </>
+                                                ) : (
+                                                        <>
+                                                                <Link
+                                                                        to="/signin"
+                                                                        className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                                                        onClick={toggleMenu}
+                                                                >
+                                                                        Sign In
+                                                                </Link>
+                                                                <Link
+                                                                        to="/signup"
+                                                                        className="block px-3 py-2 rounded-md text-base font-medium bg-blue-600 text-white hover:bg-blue-700"
+                                                                        onClick={toggleMenu}
+                                                                >
+                                                                        Sign Up
+                                                                </Link>
+                                                        </>
+                                                )}
 					</div>
 				</div>
 			)}

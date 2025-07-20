@@ -11,40 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 // Mock data for the applications
-const initialApplications = [
-  {
-    id: 101,
-    title: "UX/UI Designer",
-    company: "Creative Designs",
-    appliedDate: "2023-06-15",
-    status: "Interview",
-    response: true
-  },
-  {
-    id: 102,
-    title: "React Native Developer",
-    company: "MobileApps Inc.",
-    appliedDate: "2023-06-10",
-    status: "Applied",
-    response: false
-  },
-  {
-    id: 103,
-    title: "Frontend Developer",
-    company: "WebTech Solutions",
-    appliedDate: "2023-06-05",
-    status: "Rejected",
-    response: true
-  },
-  {
-    id: 104,
-    title: "JavaScript Engineer",
-    company: "CodeMasters",
-    appliedDate: "2023-06-01",
-    status: "Applied",
-    response: false
-  },
-];
+const initialApplications: any[] = [];
 
 const ApplicationsList: React.FC = () => {
   const [applications] = useState(initialApplications);
