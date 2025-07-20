@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from "react";
 import { login as apiLogin, register as apiRegister } from "@/lib/api";
 import { toast } from "sonner";
+import axios from "axios";
 
 interface AuthCtx {
   token: string | null;
@@ -18,18 +19,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const login = async (email: string, password: string) => {
-    const { data } = await apiLogin(email, password);
-    localStorage.setItem("token", data.access_token);
-    setToken(data.access_token);
-    toast.success("Signed in successfully");
+    try {
+      const { data } = await apiLogin(email, password);
+      localStorage.setItem("token", data.access_token);
+      setToken(data.access_token);
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response) {
+        toast.error(err.response.data.detail || "Invalid credentials");
+      } else {
+        toast.error("Unable to sign in");
+      }
+      throw err;
+    }
   };
 
   const register = async (email: string, password: string) => {
-    await apiRegister(email, password);
-    const { data } = await apiLogin(email, password);
-    localStorage.setItem("token", data.access_token);
-    setToken(data.access_token);
-    toast.success("Account created successfully");
+    try {
+      await apiRegister(email, password);
+      const { data } = await apiLogin(email, password);
+      localStorage.setItem("token", data.access_token);
+      setToken(data.access_token);
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response) {
+        toast.error(err.response.data.detail || "Unable to register");
+      } else {
+        toast.error("Unable to register");
+      }
+      throw err;
+    }
   };
 
   const logout = () => {

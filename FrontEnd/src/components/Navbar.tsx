@@ -2,6 +2,17 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { Sun, Moon, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -95,9 +106,25 @@ const Navbar = () => {
                                                                         >
                                                                                 Dashboard
                                                                         </Link>
-                                                                        <Button variant="outline" onClick={logout} className="mr-2">
-                                                                                Sign Out
-                                                                        </Button>
+<AlertDialog>
+        <AlertDialogTrigger asChild>
+                <Button variant="outline" className="mr-2">
+                        Sign Out
+                </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+                <AlertDialogHeader>
+                        <AlertDialogTitle>Sign Out</AlertDialogTitle>
+                        <AlertDialogDescription>
+                                Are you sure you want to sign out?
+                        </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={logout}>Sign Out</AlertDialogAction>
+                </AlertDialogFooter>
+        </AlertDialogContent>
+</AlertDialog>
                                                                 </>
                                                         ) : (
                                                                 <>
@@ -161,15 +188,27 @@ const Navbar = () => {
                                                                 >
                                                                         Dashboard
                                                                 </Link>
-                                                                <button
-                                                                        onClick={() => {
-                                                                                logout();
-                                                                                toggleMenu();
-                                                                        }}
-                                                                        className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                                                >
-                                                                        Sign Out
-                                                                </button>
+                                                                <AlertDialog>
+                                                                        <AlertDialogTrigger asChild>
+                                                                                <button
+                                                                                        className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                                                                >
+                                                                                        Sign Out
+                                                                                </button>
+                                                                        </AlertDialogTrigger>
+                                                                        <AlertDialogContent>
+                                                                                <AlertDialogHeader>
+                                                                                        <AlertDialogTitle>Sign Out</AlertDialogTitle>
+                                                                                        <AlertDialogDescription>
+                                                                                                Are you sure you want to sign out?
+                                                                                        </AlertDialogDescription>
+                                                                                </AlertDialogHeader>
+                                                                                <AlertDialogFooter>
+                                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                                        <AlertDialogAction onClick={() => { logout(); toggleMenu(); }}>Sign Out</AlertDialogAction>
+                                                                                </AlertDialogFooter>
+                                                                        </AlertDialogContent>
+                                                                </AlertDialog>
                                                         </>
                                                 ) : (
                                                         <>

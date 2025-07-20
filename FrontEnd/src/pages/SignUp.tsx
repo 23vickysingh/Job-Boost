@@ -18,11 +18,16 @@ const SignUp = () => {
     const confirm = fd.get("confirm") as string;
 
     if (password !== confirm) {
+      toast.error("Passwords do not match");
       return;
     }
-    await register(email, password);
-    toast.success("Account created successfully! Redirecting to dashboard...");
-    setTimeout(() => navigate('/dashboard'), 2000);
+    try {
+      await register(email, password);
+      toast.success("Account created successfully! Redirecting to dashboard...");
+      setTimeout(() => navigate('/dashboard'), 2000);
+    } catch {
+      // Error toast handled in context
+    }
   };
 
   return (
