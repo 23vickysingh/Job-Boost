@@ -7,41 +7,7 @@ import { Bookmark, Calendar, MapPin, ArrowRight } from "lucide-react";
 
 const Internships = () => {
   // Mock data for internships
-  const internships = [
-    {
-      id: 1,
-      title: "Frontend Development Intern",
-      company: "TechStart Inc.",
-      location: "Remote",
-      duration: "3 months",
-      stipend: "$1,500/month",
-      deadline: "2023-08-15",
-      tags: ["React", "JavaScript", "UI/UX"],
-      isNew: true
-    },
-    {
-      id: 2,
-      title: "UX/UI Design Intern",
-      company: "Creative Solutions",
-      location: "New York, NY",
-      duration: "6 months",
-      stipend: "$2,000/month",
-      deadline: "2023-09-01",
-      tags: ["Figma", "User Research", "Prototyping"],
-      isNew: true
-    },
-    {
-      id: 3,
-      title: "Data Science Intern",
-      company: "DataMinds",
-      location: "San Francisco, CA",
-      duration: "4 months",
-      stipend: "$2,200/month",
-      deadline: "2023-08-20",
-      tags: ["Python", "Machine Learning", "Data Analysis"],
-      isNew: false
-    },
-  ];
+  const internships: any[] = [];
 
   return (
     <Card className="mb-6">

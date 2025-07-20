@@ -10,12 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowUpRight } from "lucide-react";
 
 // Mock data for applications - in a real app, this would come from an API or context
-const mockApplications = [
-  { id: 101, title: "UX/UI Designer", company: "Creative Designs", appliedDate: "2023-06-15", status: "Interview", response: true },
-  { id: 102, title: "React Native Developer", company: "MobileApps Inc.", appliedDate: "2023-06-10", status: "Applied", response: false },
-  { id: 103, title: "Frontend Developer", company: "WebTech Solutions", appliedDate: "2023-06-05", status: "Rejected", response: true },
-  { id: 104, title: "JavaScript Engineer", company: "CodeMasters", appliedDate: "2023-06-01", status: "Applied", response: false },
-];
+const mockApplications: any[] = [];
 
 const DashboardStats: React.FC = () => {
   return (
@@ -27,7 +22,7 @@ const DashboardStats: React.FC = () => {
         <CardContent>
           <div className="text-2xl font-bold">{mockApplications.length}</div>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            <span className="text-green-500 dark:text-green-400">+2</span> from last week
+            <span className="text-green-500 dark:text-green-400">0</span> from last week
           </p>
         </CardContent>
       </Card>
@@ -55,7 +50,7 @@ const DashboardStats: React.FC = () => {
             {mockApplications.filter(app => app.status === "Interview").length}
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            <span className="text-green-500 dark:text-green-400">+1</span> scheduled this week
+            <span className="text-green-500 dark:text-green-400">0</span> scheduled this week
           </p>
         </CardContent>
       </Card>
@@ -66,10 +61,10 @@ const DashboardStats: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-2">
-            <div className="text-2xl font-bold">78%</div>
+            <div className="text-2xl font-bold">0%</div>
             <ArrowUpRight className="h-4 w-4 text-green-500 dark:text-green-400" />
           </div>
-          <Progress value={78} className="h-2 mt-2" />
+          <Progress value={0} className="h-2 mt-2" />
         </CardContent>
       </Card>
     </div>

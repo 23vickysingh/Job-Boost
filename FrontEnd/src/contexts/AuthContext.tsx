@@ -26,7 +26,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const register = async (email: string, password: string) => {
     await apiRegister(email, password);
-    toast.success("Account created! Please sign in.");
+    const { data } = await apiLogin(email, password);
+    localStorage.setItem("token", data.access_token);
+    setToken(data.access_token);
+    toast.success("Account created successfully");
   };
 
   const logout = () => {
