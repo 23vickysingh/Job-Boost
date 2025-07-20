@@ -15,9 +15,13 @@ const SignIn = () => {
     const fd = new FormData(e.currentTarget);
     const email = fd.get("email") as string;
     const password = fd.get("password") as string;
-    await login(email, password);
-    toast.success("Signed in successfully! Redirecting to dashboard...");
-    setTimeout(() => navigate('/dashboard'), 2000);
+    try {
+      await login(email, password);
+      toast.success("Signed in successfully! Redirecting to dashboard...");
+      setTimeout(() => navigate('/dashboard'), 2000);
+    } catch {
+      // Error toast handled in context
+    }
   };
 
   return (
