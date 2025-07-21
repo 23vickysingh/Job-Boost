@@ -10,6 +10,16 @@ class UserCreate(BaseModel):
     password: str
 
 
+class RegistrationRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class RegistrationVerify(BaseModel):
+    email: EmailStr
+    otp: str
+
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
