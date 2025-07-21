@@ -13,15 +13,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS (adjust origins for frontend later)
-# Allow requests from the development frontend served by Vite
-origins = [
-    "http://localhost:8080",
-]
-
+# Enable CORS for the frontend
+# During local development the Vite dev server may run on a
+# couple different ports depending on the environment so we
+# simply allow all origins.  This keeps the example easy to run
+# while still restricting allowed methods/headers.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

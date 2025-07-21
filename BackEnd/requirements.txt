@@ -9,3 +9,5 @@ requests
 beautifulsoup4
 pandas
 python-multipart
+pdfminer.six
+docx2txt

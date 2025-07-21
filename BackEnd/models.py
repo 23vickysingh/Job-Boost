@@ -26,6 +26,10 @@ class UserProfile(Base):
     experience = Column(Integer)
     resume_filename = Column(String(255))
     resume_data = Column(Text)  # Raw or parsed resume content
+    skills = Column(Text)
+    projects = Column(Text)
+    experiences_detail = Column(Text)
+    achievements = Column(Text)
 
     user = relationship("User", back_populates="profile")
 
