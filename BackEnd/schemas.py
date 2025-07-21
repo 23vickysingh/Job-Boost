@@ -40,6 +40,10 @@ class UserProfileBase(BaseModel):
     full_name: Optional[str] = None
     interested_role: Optional[str] = None
     experience: Optional[int] = None
+    skills: Optional[str] = None
+    projects: Optional[str] = None
+    experiences_detail: Optional[str] = None
+    achievements: Optional[str] = None
 
 
 class UserProfileCreate(UserProfileBase):
