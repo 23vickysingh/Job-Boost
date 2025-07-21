@@ -1,33 +1,64 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 import Navbar from '@/components/Navbar';
 import AuthForm from '@/components/AuthForm';
+import SignupOtpForm from '@/components/signup/OtpForm';
 import { useAuth } from "@/contexts/AuthContext";
+import { requestRegistration, confirmRegistration } from '@/lib/api';
 
 const SignUp = () => {
-  const { register } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
+  const [step, setStep] = useState<'form' | 'otp'>('form');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const email = fd.get("email") as string;
-    const password = fd.get("password") as string;
+    const em = fd.get("email") as string;
+    const pw = fd.get("password") as string;
     const confirm = fd.get("confirm") as string;
 
-    if (password !== confirm) {
+    if (pw !== confirm) {
       toast.error("Passwords do not match");
       return;
     }
     try {
-      await register(email, password);
-      toast.success("Account created successfully! Redirecting to dashboard...");
-      setTimeout(() => navigate('/dashboard'), 2000);
+      await requestRegistration(em, pw);
+      setEmail(em);
+      setPassword(pw);
+      toast.success('OTP sent to your email');
+      setStep('otp');
     } catch {
-      // Error toast handled in context
+      toast.error('Unable to register');
     }
+  };
+
+  const handleOtp = async (otp: string) => {
+    try {
+      await confirmRegistration(email, otp);
+      toast.success('Account verified');
+      await login(email, password);
+      navigate('/dashboard');
+    } catch {
+      toast.error('OTP incorrect');
+    }
+  };
+
+  const handleExpire = () => {
+    toast.error('OTP expired. Please sign up again');
+    setStep('form');
+  };
+
+  const renderStep = () => {
+    return step === 'form' ? (
+      <AuthForm type="signup" onSubmit={handleSubmit} />
+    ) : (
+      <SignupOtpForm onSubmit={handleOtp} onExpire={handleExpire} />
+    );
   };
 
   return (
@@ -35,7 +66,7 @@ const SignUp = () => {
       <Navbar />
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 hero-gradient">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
-          <AuthForm type="signup" onSubmit={handleSubmit} />
+          {renderStep()}
         </div>
       </div>
     </div>

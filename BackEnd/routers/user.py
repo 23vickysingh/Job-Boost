@@ -33,6 +33,52 @@ def register_user(request: schemas.UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 
+@router.post("/request-registration")
+def request_registration(request: schemas.RegistrationRequest, db: Session = Depends(get_db)):
+    existing_user = db.query(models.User).filter(models.User.email == request.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    otp = f"{random.randint(100000, 999999)}"
+    hashed = Hash.bcrypt(request.password)
+    expires = datetime.utcnow() + timedelta(minutes=1)
+
+    db.query(models.RegistrationOTP).filter(models.RegistrationOTP.email == request.email).delete()
+    reg = models.RegistrationOTP(email=request.email, hashed_password=hashed, otp=otp, expires_at=expires)
+    db.add(reg)
+    db.commit()
+
+    send_otp_email(request.email, otp)
+    return {"message": "OTP sent"}
+
+
+@router.post("/confirm-registration", response_model=schemas.UserOut)
+def confirm_registration(request: schemas.RegistrationVerify, db: Session = Depends(get_db)):
+    record = (
+        db.query(models.RegistrationOTP)
+        .filter(
+            models.RegistrationOTP.email == request.email,
+            models.RegistrationOTP.otp == request.otp,
+            models.RegistrationOTP.expires_at > datetime.utcnow(),
+        )
+        .first()
+    )
+    if not record:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    if db.query(models.User).filter(models.User.email == request.email).first():
+        db.delete(record)
+        db.commit()
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    new_user = models.User(email=record.email, hashed_password=record.hashed_password)
+    db.add(new_user)
+    db.delete(record)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+
 @router.post("/login")
 def login_user(request: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == request.username).first()

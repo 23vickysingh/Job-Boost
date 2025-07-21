@@ -66,3 +66,13 @@ class PasswordReset(Base):
     is_verified = Column(Boolean, default=False)
 
     user = relationship("User")
+
+
+class RegistrationOTP(Base):
+    __tablename__ = "registration_otps"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True)
+    hashed_password = Column(String(255))
+    otp = Column(String(6))
+    expires_at = Column(DateTime)
