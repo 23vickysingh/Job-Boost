@@ -28,3 +28,12 @@ export const uploadProfile = (form: FormData) =>
   api.post("/profile/", form);
 
 export const fetchProfile = () => api.get("/profile/");
+
+export const requestPasswordReset = (email: string) =>
+  api.post("/user/request-password-reset", { email });
+
+export const verifyOtp = (email: string, otp: string) =>
+  api.post("/user/verify-otp", { email, otp });
+
+export const resetPassword = (email: string, otp: string, password: string) =>
+  api.post("/user/reset-password", { email, otp, password });

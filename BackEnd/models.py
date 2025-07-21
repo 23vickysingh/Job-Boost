@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Float
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Float, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -54,3 +54,15 @@ class JobMatch(Base):
 
     user = relationship("User", back_populates="job_matches")
     job = relationship("Job", back_populates="job_matches")
+
+
+class PasswordReset(Base):
+    __tablename__ = "password_resets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    otp = Column(String(6))
+    expires_at = Column(DateTime)
+    is_verified = Column(Boolean, default=False)
+
+    user = relationship("User")

@@ -77,3 +77,20 @@ class JobMatchOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+# ---------------- Password Reset Schemas ----------------
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class OTPVerify(BaseModel):
+    email: EmailStr
+    otp: str
+
+
+class PasswordUpdate(BaseModel):
+    email: EmailStr
+    otp: str
+    password: str
