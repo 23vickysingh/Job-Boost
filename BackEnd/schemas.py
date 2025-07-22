@@ -31,7 +31,7 @@ class UserOut(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ---------------- Profile Schemas ----------------
@@ -57,7 +57,7 @@ class UserProfileOut(UserProfileBase):
     resume_data: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ---------------- Job Schemas ----------------
@@ -79,7 +79,7 @@ class JobOut(JobBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ---------------- Job Match Schemas ----------------
@@ -90,7 +90,7 @@ class JobMatchOut(BaseModel):
     job: JobOut
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ---------------- Password Reset Schemas ----------------
