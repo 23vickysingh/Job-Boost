@@ -6,10 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { savePersonalInfo } from '@/lib/api';
+import { savePersonalInfo, fetchPersonalInfo } from '@/lib/api';
 
 const PersonalInfo = () => {
   const navigate = useNavigate();
+  const [info, setInfo] = React.useState<Record<string, string | null>>({});
+
+  React.useEffect(() => {
+    fetchPersonalInfo()
+      .then((res) => setInfo(res.data))
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -50,50 +57,50 @@ const PersonalInfo = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="dob">Date of Birth</Label>
-              <Input id="dob" name="dob" type="date" />
+              <Input id="dob" name="dob" type="date" defaultValue={info.dob ?? ''} />
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
-                <Input id="country" name="country" />
+                <Input id="country" name="country" defaultValue={info.country ?? ''} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="state">State</Label>
-                <Input id="state" name="state" />
+                <Input id="state" name="state" defaultValue={info.state ?? ''} />
               </div>
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="city">City</Label>
-                <Input id="city" name="city" />
+                <Input id="city" name="city" defaultValue={info.city ?? ''} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="street">Street</Label>
-                <Input id="street" name="street" />
+                <Input id="street" name="street" defaultValue={info.street ?? ''} />
               </div>
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="house_number">House No.</Label>
-                <Input id="house_number" name="house_number" />
+                <Input id="house_number" name="house_number" defaultValue={info.house_number ?? ''} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="pin_code">PIN Code</Label>
-                <Input id="pin_code" name="pin_code" />
+                <Input id="pin_code" name="pin_code" defaultValue={info.pin_code ?? ''} />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone_number">Phone Number</Label>
-              <Input id="phone_number" name="phone_number" />
+              <Input id="phone_number" name="phone_number" defaultValue={info.phone_number ?? ''} />
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="current_job_role">Current Job Role</Label>
-                <Input id="current_job_role" name="current_job_role" />
+                <Input id="current_job_role" name="current_job_role" defaultValue={info.current_job_role ?? ''} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="company">Company</Label>
-                <Input id="company" name="company" />
+                <Input id="company" name="company" defaultValue={info.company ?? ''} />
               </div>
             </div>
             <div className="flex justify-end gap-4 pt-4">
