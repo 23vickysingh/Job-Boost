@@ -39,6 +39,8 @@ export const savePersonalInfo = (data: Record<string, unknown>) =>
 export const uploadResume = (form: FormData) =>
   api.post("/personal-info/resume", form);
 
+export const fetchPersonalInfo = () => api.get("/personal-info/");
+
 export const fetchProfile = () => api.get("/profile/");
 
 export const requestPasswordReset = (email: string) =>
