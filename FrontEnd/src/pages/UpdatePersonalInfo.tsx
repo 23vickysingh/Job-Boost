@@ -8,19 +8,35 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { savePersonalInfo, fetchPersonalInfo } from '@/lib/api';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
+import axios from 'axios';
 
 const UpdatePersonalInfo = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { token } = useAuth();
   const [info, setInfo] = React.useState<Record<string, string | null>>({});
   const [isEditing, setIsEditing] = React.useState(false);
   const email = localStorage.getItem('email') || '';
 
   React.useEffect(() => {
+    if (!token) {
+      navigate('/signin');
+    }
+  }, [token, navigate]);
+
+  React.useEffect(() => {
     fetchPersonalInfo()
       .then((res) => setInfo(res.data))
-      .catch(() => {});
-  }, []);
+      .catch((err) => {
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+          toast.error('Session expired. Please sign in again.');
+          navigate('/signin');
+        } else {
+          toast.error('Unable to load information');
+        }
+      });
+  }, [navigate]);
 
   const handleEdit = () => setIsEditing(true);
 
