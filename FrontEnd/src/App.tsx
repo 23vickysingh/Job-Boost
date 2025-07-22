@@ -12,6 +12,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import About from "./pages/About";
 import Dashboard from "./pages/Dashboard";
 import ResumeUpload from "./pages/ResumeUpload";
+import PersonalInfo from "./pages/PersonalInfo";
 import NotFound from "./pages/NotFound";
 import FAQ from "./pages/FAQ";
 import Pricing from "./pages/Pricing";
@@ -59,6 +60,7 @@ const App = () => {
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/personal-info" element={<PersonalInfo />} />
                 <Route path="/resume-upload" element={<ResumeUpload />} />
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/pricing" element={<Pricing />} />

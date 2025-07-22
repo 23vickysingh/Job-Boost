@@ -33,6 +33,12 @@ export const login = (email: string, password: string) =>
 export const uploadProfile = (form: FormData) =>
   api.post("/profile/", form);
 
+export const savePersonalInfo = (data: Record<string, unknown>) =>
+  api.post("/personal-info/", data);
+
+export const uploadResume = (form: FormData) =>
+  api.post("/personal-info/resume", form);
+
 export const fetchProfile = () => api.get("/profile/");
 
 export const requestPasswordReset = (email: string) =>

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Float, Boolean
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Float, Boolean, Date
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -80,3 +80,23 @@ class RegistrationOTP(Base):
     hashed_password = Column(String(255))
     otp = Column(String(6))
     expires_at = Column(DateTime)
+
+
+class PersonalInformation(Base):
+    __tablename__ = "personal_information"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True)
+    dob = Column(Date, nullable=True)
+    country = Column(String(100))
+    state = Column(String(100))
+    city = Column(String(100))
+    street = Column(String(255))
+    house_number = Column(String(50))
+    pin_code = Column(String(20))
+    phone_number = Column(String(50))
+    current_job_role = Column(String(100))
+    company = Column(String(100))
+    resume_path = Column(String(255))
+
+    user = relationship("User", backref="personal_info", uselist=False)

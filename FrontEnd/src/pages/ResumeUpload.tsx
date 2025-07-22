@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Upload, FileText, Check, AlertCircle } from "lucide-react";
 import Navbar from '@/components/Navbar';
-import { uploadProfile } from "@/lib/api";
+import { uploadResume } from "@/lib/api";
 
 const ResumeUpload = () => {
   const navigate = useNavigate();
@@ -16,6 +16,12 @@ const ResumeUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
+
+  const handleSkip = () => {
+    if (window.confirm('Skip resume upload? You can upload later.')) {
+      navigate('/dashboard');
+    }
+  };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -64,14 +70,11 @@ const ResumeUpload = () => {
   const handleUpload = async () => {
     if (!file) return;
 
-    const form =  new FormData();
-    form.append("full_name", "John Doe");
-    form.append("interested_role", "Backend Engineer");
-    form.append("experience", "3");
-    form.append("resume", file);
+    const form = new FormData();
+    form.append("file", file);
 
     setIsUploading(true);
-    await uploadProfile(form);
+    await uploadResume(form);
     setUploadProgress(0);
 
     setIsUploading(false);
@@ -131,6 +134,7 @@ const ResumeUpload = () => {
             <p className="mt-3 text-lg text-gray-600 dark:text-gray-300">
               Let our AI analyze your resume and find the perfect job matches for you
             </p>
+            <Button variant="ghost" onClick={handleSkip} className="mt-4">Skip for now</Button>
           </div>
 
           <Card className="p-6 shadow-lg glass-card">
