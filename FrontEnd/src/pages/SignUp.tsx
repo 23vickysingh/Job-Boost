@@ -42,7 +42,7 @@ const SignUp = () => {
       await confirmRegistration(email, otp);
       toast.success('Account verified');
       await login(email, password);
-      navigate('/dashboard');
+      navigate('/personal-info');
     } catch {
       toast.error('OTP incorrect');
     }
