@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date
 
 
 # ---------------- User Schemas ----------------
@@ -108,3 +108,30 @@ class PasswordUpdate(BaseModel):
     email: EmailStr
     otp: str
     password: str
+
+
+# ---------------- Personal Info Schemas ----------------
+
+class PersonalInfoBase(BaseModel):
+    dob: Optional[date] = None
+    country: Optional[str] = None
+    state: Optional[str] = None
+    city: Optional[str] = None
+    street: Optional[str] = None
+    house_number: Optional[str] = None
+    pin_code: Optional[str] = None
+    phone_number: Optional[str] = None
+    current_job_role: Optional[str] = None
+    company: Optional[str] = None
+
+
+class PersonalInfoCreate(PersonalInfoBase):
+    pass
+
+
+class PersonalInfoOut(PersonalInfoBase):
+    id: int
+    resume_path: Optional[str] = None
+
+    class Config:
+        from_attributes = True

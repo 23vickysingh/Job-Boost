@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import user, profile
+from .routers import user, profile, personal_info
 from .database import Base, engine
 
 # Create all tables
@@ -29,3 +29,4 @@ app.add_middleware(
 # Include routers
 app.include_router(user.router)
 app.include_router(profile.router)
+app.include_router(personal_info.router)
