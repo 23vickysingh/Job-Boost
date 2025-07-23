@@ -24,6 +24,8 @@ const UpdatePersonalInfo = () => {
       .then((res) => setInfo(res.data))
       .catch(() => {});
   }, []);
+
+  React.useEffect(() => {
     if (!token) {
       navigate('/signin');
     }
