@@ -31,6 +31,7 @@ class UserInformation(Base):
     city = Column(String(100))
     street = Column(String(255))
     alternate_email = Column(String(255))
+    resume_path = Column(String(255))
 
     user = relationship("User", back_populates="information")
 

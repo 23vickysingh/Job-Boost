@@ -43,6 +43,7 @@ class UserInformationBase(BaseModel):
     city: Optional[str] = None
     street: Optional[str] = None
     alternate_email: Optional[EmailStr] = None
+    resume_path: Optional[str] = None
 
 
 class UserInformationCreate(UserInformationBase):

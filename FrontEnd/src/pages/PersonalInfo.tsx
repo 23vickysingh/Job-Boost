@@ -11,6 +11,7 @@ import { savePersonalInfo, fetchPersonalInfo } from '@/lib/api';
 const PersonalInfo = () => {
   const navigate = useNavigate();
   const [info, setInfo] = React.useState<Record<string, string | null>>({});
+  const [agree, setAgree] = React.useState(false);
 
   React.useEffect(() => {
     fetchPersonalInfo()
@@ -22,17 +23,19 @@ const PersonalInfo = () => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const data: Record<string, unknown> = {
-      dob: fd.get('dob'),
+      first_name: fd.get('first_name'),
+      last_name: fd.get('last_name'),
+      phone_number: fd.get('phone_number'),
       country: fd.get('country'),
       state: fd.get('state'),
       city: fd.get('city'),
       street: fd.get('street'),
-      house_number: fd.get('house_number'),
-      pin_code: fd.get('pin_code'),
-      phone_number: fd.get('phone_number'),
-      current_job_role: fd.get('current_job_role'),
-      company: fd.get('company'),
+      alternate_email: fd.get('alternate_email'),
     };
+    if (!agree) {
+      toast.error('You must agree to the terms');
+      return;
+    }
     try {
       await savePersonalInfo(data);
       toast.success('Information saved');
@@ -44,7 +47,7 @@ const PersonalInfo = () => {
 
   const handleSkip = () => {
     if (window.confirm('Skip adding personal info? You can fill it later.')) {
-      navigate('/resume-upload');
+      navigate('/dashboard');
     }
   };
 
@@ -55,9 +58,19 @@ const PersonalInfo = () => {
         <Card className="w-full max-w-xl p-8 space-y-6 glass-card animate-fade-in">
           <h2 className="text-2xl font-bold text-center">Personal Information</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">First Name</Label>
+                <Input id="first_name" name="first_name" defaultValue={info.first_name ?? ''} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name">Last Name</Label>
+                <Input id="last_name" name="last_name" defaultValue={info.last_name ?? ''} />
+              </div>
+            </div>
             <div className="space-y-2">
-              <Label htmlFor="dob">Date of Birth</Label>
-              <Input id="dob" name="dob" type="date" defaultValue={info.dob ?? ''} />
+              <Label htmlFor="phone_number">Phone Number</Label>
+              <Input id="phone_number" name="phone_number" defaultValue={info.phone_number ?? ''} />
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -79,33 +92,22 @@ const PersonalInfo = () => {
                 <Input id="street" name="street" defaultValue={info.street ?? ''} />
               </div>
             </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="house_number">House No.</Label>
-                <Input id="house_number" name="house_number" defaultValue={info.house_number ?? ''} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pin_code">PIN Code</Label>
-                <Input id="pin_code" name="pin_code" defaultValue={info.pin_code ?? ''} />
-              </div>
-            </div>
             <div className="space-y-2">
-              <Label htmlFor="phone_number">Phone Number</Label>
-              <Input id="phone_number" name="phone_number" defaultValue={info.phone_number ?? ''} />
+              <Label htmlFor="alternate_email">Alternate Email</Label>
+              <Input id="alternate_email" name="alternate_email" type="email" defaultValue={info.alternate_email ?? ''} />
             </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="current_job_role">Current Job Role</Label>
-                <Input id="current_job_role" name="current_job_role" defaultValue={info.current_job_role ?? ''} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="company">Company</Label>
-                <Input id="company" name="company" defaultValue={info.company ?? ''} />
-              </div>
+            <div className="flex items-center space-x-2">
+              <input
+                id="agree"
+                type="checkbox"
+                checked={agree}
+                onChange={(e) => setAgree(e.target.checked)}
+              />
+              <Label htmlFor="agree" className="text-sm">I agree to the terms and conditions</Label>
             </div>
             <div className="flex justify-end gap-4 pt-4">
               <Button type="button" variant="outline" onClick={handleSkip}>Skip</Button>
-              <Button type="submit">Continue</Button>
+              <Button type="submit" disabled={!agree}>Save</Button>
             </div>
           </form>
         </Card>
