@@ -20,6 +20,10 @@ const UpdatePersonalInfo = () => {
   const email = localStorage.getItem('email') || '';
 
   React.useEffect(() => {
+    fetchPersonalInfo()
+      .then((res) => setInfo(res.data))
+      .catch(() => {});
+  }, []);
     if (!token) {
       navigate('/signin');
     }
