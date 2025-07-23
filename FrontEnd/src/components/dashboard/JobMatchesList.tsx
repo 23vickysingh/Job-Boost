@@ -13,11 +13,31 @@ import {
 } from "lucide-react";
 
 // Mock data for the job matches
-const initialJobMatches: any[] = [];
+interface JobMatch {
+  id: number;
+  title: string;
+  company: string;
+  matchScore: number;
+  location: string;
+  salary: string;
+  posted: string;
+  applied?: boolean;
+}
+
+interface Application {
+  id: number;
+  title: string;
+  company: string;
+  appliedDate: string;
+  status: string;
+  response: boolean;
+}
+
+const initialJobMatches: JobMatch[] = [];
 
 const JobMatchesList: React.FC = () => {
   const [jobMatches, setJobMatches] = useState(initialJobMatches);
-  const [applications, setApplications] = useState<any[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   
   const applyToJob = (jobId: number) => {
     setJobMatches(prev => 

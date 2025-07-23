@@ -7,7 +7,19 @@ import { Bookmark, Calendar, MapPin, ArrowRight } from "lucide-react";
 
 const Internships = () => {
   // Mock data for internships
-  const internships: any[] = [];
+  interface Internship {
+    id: number;
+    title: string;
+    company: string;
+    location: string;
+    deadline: string;
+    duration: string;
+    stipend: string;
+    tags: string[];
+    isNew?: boolean;
+  }
+
+  const internships: Internship[] = [];
 
   return (
     <Card className="mb-6">

@@ -5,9 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Edit, User, Mail, Phone, MapPin, Briefcase, Calendar } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+interface Profile {
+  full_name: string;
+  interested_role: string;
+  experience: number;
+  email: string;
+  phone: string;
+  address: string;
+}
+
 interface UserProfileProps {
   onEditClick: () => void;
-  profile?: any;
+  profile?: Profile;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ onEditClick, profile }) => {

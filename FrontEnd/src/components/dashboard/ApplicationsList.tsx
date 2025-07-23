@@ -11,7 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 // Mock data for the applications
-const initialApplications: any[] = [];
+interface Application {
+  id: number;
+  title: string;
+  company: string;
+  appliedDate: string;
+  status: string;
+}
+
+const initialApplications: Application[] = [];
 
 const ApplicationsList: React.FC = () => {
   const [applications] = useState(initialApplications);

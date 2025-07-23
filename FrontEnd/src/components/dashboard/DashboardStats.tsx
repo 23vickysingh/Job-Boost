@@ -10,7 +10,13 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowUpRight } from "lucide-react";
 
 // Mock data for applications - in a real app, this would come from an API or context
-const mockApplications: any[] = [];
+interface Application {
+  id: number;
+  response?: boolean;
+  status?: string;
+}
+
+const mockApplications: Application[] = [];
 
 const DashboardStats: React.FC = () => {
   return (
