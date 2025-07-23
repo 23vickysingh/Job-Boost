@@ -20,7 +20,6 @@ import {
   Settings, 
   Bookmark, 
   BarChart,
-  ArrowRight 
 } from "lucide-react";
 import Navbar from '@/components/Navbar';
 import UserProfile from '@/components/dashboard/UserProfile';
@@ -34,7 +33,6 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = React.useState("matches");
-  const [isEditingProfile, setIsEditingProfile] = React.useState(false);
   const { token } = useAuth();
   const navigate = useNavigate();
   React.useEffect(() => {
@@ -78,7 +76,7 @@ const Dashboard = () => {
           
           <DashboardStats />
 
-          <UserProfile profile={profile} onEditClick={() => setIsEditingProfile(true)} />
+          <UserProfile profile={profile} onEditClick={() => navigate('/update-profile')} />
           
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-6">
