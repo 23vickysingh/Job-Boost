@@ -12,3 +12,4 @@ pandas
 python-multipart
 pdfminer.six
 docx2txt
+redis
