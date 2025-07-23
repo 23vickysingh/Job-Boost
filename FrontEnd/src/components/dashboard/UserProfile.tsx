@@ -2,16 +2,18 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, User, Mail, Phone, MapPin, Briefcase, Calendar } from "lucide-react";
+import { Edit, Mail, Phone, MapPin } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Profile {
-  full_name: string;
-  interested_role: string;
-  experience: number;
-  email: string;
-  phone: string;
-  address: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone_number: string | null;
+  country: string | null;
+  state: string | null;
+  city: string | null;
+  street: string | null;
+  alternate_email: string | null;
 }
 
 interface UserProfileProps {
@@ -21,13 +23,19 @@ interface UserProfileProps {
 
 const UserProfile: React.FC<UserProfileProps> = ({ onEditClick, profile }) => {
   const user = profile || {
-    full_name: "",
-    interested_role: "",
-    experience: 0,
-    email: "",
-    phone: "",
-    address: ""
+    first_name: null,
+    last_name: null,
+    phone_number: null,
+    country: null,
+    state: null,
+    city: null,
+    street: null,
+    alternate_email: null,
   };
+  const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ");
+  const address = [user.street, user.city, user.state, user.country]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <Card className="mb-6">
@@ -41,16 +49,14 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditClick, profile }) => {
       <CardContent className="grid md:grid-cols-2 gap-6">
         <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
           <Avatar className="h-20 w-20">
-            <AvatarImage src="https://github.com/shadcn.png" alt={user.full_name} />
+            <AvatarImage src="https://github.com/shadcn.png" alt={fullName} />
             <AvatarFallback className="text-lg">
-              {user.full_name ? user.full_name.split(' ').map((n: string) => n[0]).join('') : ""}
+              {fullName ? fullName.split(' ').map((n: string) => n[0]).join('') : ""}
             </AvatarFallback>
           </Avatar>
 
           <div className="text-center sm:text-left">
-            <h3 className="text-xl font-semibold">{user.full_name || "-"}</h3>
-            <p className="text-gray-600 dark:text-gray-300">{user.interested_role || "-"}</p>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{user.experience ? `${user.experience} yrs exp` : "-"}</p>
+            <h3 className="text-xl font-semibold">{fullName || "-"}</h3>
           </div>
         </div>
 
@@ -58,8 +64,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditClick, profile }) => {
           <div className="flex items-start gap-2">
             <Mail className="h-5 w-5 text-gray-500 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{user.email || "-"}</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Alternate Email</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{user.alternate_email || "-"}</p>
             </div>
           </div>
 
@@ -67,7 +73,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditClick, profile }) => {
             <Phone className="h-5 w-5 text-gray-500 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{user.phone || "-"}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{user.phone_number || "-"}</p>
             </div>
           </div>
 
@@ -75,7 +81,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditClick, profile }) => {
             <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Address</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{user.address || "-"}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{address || "-"}</p>
             </div>
           </div>
         </div>

@@ -9,11 +9,33 @@ from ..database import get_db
 from ..auth.hashing import Hash
 from ..auth.tokens import create_access_token
 from ..redis_client import redis_client
+import os
+import requests
 
 
-def send_otp_email(to_email: str, otp: str):
-    """Placeholder email sender"""
-    print(f"Sending OTP {otp} to {to_email}")
+def send_otp_email(to_email: str, otp: str) -> bool:
+    """Send OTP via Brevo. Returns True on success."""
+    api_key = os.getenv("BREVO_API_KEY")
+    if not api_key:
+        print("Brevo API key not configured")
+        return False
+
+    payload = {
+        "sender": {"name": "JobBoost", "email": "no-reply@jobboost.com"},
+        "to": [{"email": to_email}],
+        "subject": "Your JobBoost OTP",
+        "htmlContent": f"<p>Your verification code is <strong>{otp}</strong></p>",
+    }
+    headers = {"api-key": api_key, "Content-Type": "application/json"}
+    try:
+        response = requests.post(
+            "https://api.brevo.com/v3/smtp/email", json=payload, headers=headers
+        )
+        response.raise_for_status()
+        return True
+    except requests.RequestException as e:
+        print("Brevo send failed", e)
+        return False
 
 
 router = APIRouter(prefix="/user", tags=["User"])
@@ -48,7 +70,9 @@ def request_registration(request: schemas.RegistrationRequest, db: Session = Dep
     redis_client.hset(key, mapping={"otp": otp, "password": hashed})
     redis_client.expire(key, timedelta(minutes=1))
 
-    send_otp_email(request.user_id, otp)
+    if not send_otp_email(request.user_id, otp):
+        redis_client.delete(key)
+        raise HTTPException(status_code=400, detail="Invalid email id")
     return {"message": "OTP sent"}
 
 
