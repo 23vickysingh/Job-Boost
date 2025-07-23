@@ -4,6 +4,7 @@ sqlalchemy
 pymysql
 pydantic
 passlib[bcrypt]
+bcrypt<4
 python-jose
 requests
 beautifulsoup4

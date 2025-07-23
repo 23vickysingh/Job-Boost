@@ -30,6 +30,11 @@ def register_user(request: schemas.UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Create an empty profile record so initial profile fetches succeed
+    profile = models.UserProfile(user_id=new_user.id)
+    db.add(profile)
+    db.commit()
     return new_user
 
 
@@ -76,6 +81,11 @@ def confirm_registration(request: schemas.RegistrationVerify, db: Session = Depe
     db.delete(record)
     db.commit()
     db.refresh(new_user)
+
+    # Ensure a profile exists for newly registered users
+    profile = models.UserProfile(user_id=new_user.id)
+    db.add(profile)
+    db.commit()
     return new_user
 
 
