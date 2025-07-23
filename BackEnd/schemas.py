@@ -1,49 +1,70 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
-from datetime import datetime, date
+from typing import Optional
+from datetime import datetime
 
 
 # ---------------- User Schemas ----------------
-
 class UserCreate(BaseModel):
-    email: EmailStr
+    user_id: EmailStr
     password: str
 
 
 class RegistrationRequest(BaseModel):
-    email: EmailStr
+    user_id: EmailStr
     password: str
 
 
 class RegistrationVerify(BaseModel):
-    email: EmailStr
+    user_id: EmailStr
     otp: str
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    user_id: EmailStr
     password: str
 
 
 class UserOut(BaseModel):
     id: int
-    email: EmailStr
+    user_id: EmailStr
     created_at: datetime
 
     class Config:
         from_attributes = True
 
 
-# ---------------- Profile Schemas ----------------
+# ---------------- User Information Schemas ----------------
+class UserInformationBase(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    country: Optional[str] = None
+    state: Optional[str] = None
+    city: Optional[str] = None
+    street: Optional[str] = None
+    alternate_email: Optional[EmailStr] = None
 
+
+class UserInformationCreate(UserInformationBase):
+    pass
+
+
+class UserInformationOut(UserInformationBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
+# ---------------- Profile Schemas ----------------
 class UserProfileBase(BaseModel):
-    full_name: Optional[str] = None
-    interested_role: Optional[str] = None
-    experience: Optional[int] = None
+    experiences: Optional[str] = None
     skills: Optional[str] = None
     projects: Optional[str] = None
-    experiences_detail: Optional[str] = None
+    education: Optional[str] = None
+    courses: Optional[str] = None
     achievements: Optional[str] = None
+    extra_curricular: Optional[str] = None
 
 
 class UserProfileCreate(UserProfileBase):
@@ -53,22 +74,20 @@ class UserProfileCreate(UserProfileBase):
 
 class UserProfileOut(UserProfileBase):
     id: int
-    resume_filename: Optional[str]
-    resume_data: Optional[str]
+    resume_filename: Optional[str] = None
+    resume_data: Optional[str] = None
 
     class Config:
         from_attributes = True
 
 
 # ---------------- Job Schemas ----------------
-
 class JobBase(BaseModel):
     title: str
     company: str
     location: str
     description: str
     apply_link: str
-    hr_contact: Optional[str]
 
 
 class JobCreate(JobBase):
@@ -83,7 +102,6 @@ class JobOut(JobBase):
 
 
 # ---------------- Job Match Schemas ----------------
-
 class JobMatchOut(BaseModel):
     id: int
     relevance_score: float
@@ -94,44 +112,16 @@ class JobMatchOut(BaseModel):
 
 
 # ---------------- Password Reset Schemas ----------------
-
 class PasswordResetRequest(BaseModel):
-    email: EmailStr
+    user_id: EmailStr
 
 
 class OTPVerify(BaseModel):
-    email: EmailStr
+    user_id: EmailStr
     otp: str
 
 
 class PasswordUpdate(BaseModel):
-    email: EmailStr
+    user_id: EmailStr
     otp: str
     password: str
-
-
-# ---------------- Personal Info Schemas ----------------
-
-class PersonalInfoBase(BaseModel):
-    dob: Optional[date] = None
-    country: Optional[str] = None
-    state: Optional[str] = None
-    city: Optional[str] = None
-    street: Optional[str] = None
-    house_number: Optional[str] = None
-    pin_code: Optional[str] = None
-    phone_number: Optional[str] = None
-    current_job_role: Optional[str] = None
-    company: Optional[str] = None
-
-
-class PersonalInfoCreate(PersonalInfoBase):
-    pass
-
-
-class PersonalInfoOut(PersonalInfoBase):
-    id: int
-    resume_path: Optional[str] = None
-
-    class Config:
-        from_attributes = True
