@@ -3,8 +3,8 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
 
-from .. import models, database
-from .tokens import verify_access_token
+import models, database
+from auth.tokens import verify_access_token
 
 # OAuth2PasswordBearer expects the full login URL relative to the API root.
 # Our login route lives under the /user prefix, so we specify that here to

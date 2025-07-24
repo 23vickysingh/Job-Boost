@@ -13,3 +13,4 @@ python-multipart
 pdfminer.six
 docx2txt
 redis
+email-validator

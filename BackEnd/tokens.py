@@ -1,7 +1,7 @@
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from .schemas import TokenData
+from schemas import TokenData
 import os
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")

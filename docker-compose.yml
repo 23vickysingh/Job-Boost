@@ -1,0 +1,39 @@
+
+services:
+  # Backend Service (FastAPI)
+  backend:
+    build: ./BackEnd
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    # environment:
+    #   - DATABASE_URL=${DATABASE_URL}
+    #   - SECRET_KEY=${SECRET_KEY}
+    #   - ALGORITHM=${ALGORITHM}
+    #   - BREVO_API_KEY=${BREVO_API_KEY}
+    depends_on:
+      - db
+
+  # Frontend Service (React + Nginx)
+  frontend:
+    build: ./FrontEnd
+    ports:
+      - "5173:80" # We map port 5173 on our machine to port 80 in the container
+
+  # Database Service (MySQL)
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:

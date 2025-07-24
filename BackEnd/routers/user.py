@@ -4,11 +4,11 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import random
 
-from .. import models, schemas
-from ..database import get_db
-from ..auth.hashing import Hash
-from ..auth.tokens import create_access_token
-from ..redis_client import redis_client
+import models, schemas
+from database import get_db
+from auth.hashing import Hash
+from auth.tokens import create_access_token
+from redis_client import redis_client
 import os
 import requests
 

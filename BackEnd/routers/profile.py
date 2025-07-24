@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
-from .. import models, schemas
-from ..utils.resume_parser import extract_text_from_upload, parse_resume_details
-from ..database import get_db
-from ..auth.dependencies import get_current_user
+import models, schemas
+from utils.resume_parser import extract_text_from_upload, parse_resume_details
+from database import get_db
+from auth.dependencies import get_current_user
 
 router = APIRouter(prefix="/profile", tags=["Profile"])
 

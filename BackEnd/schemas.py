@@ -126,3 +126,7 @@ class PasswordUpdate(BaseModel):
     user_id: EmailStr
     otp: str
     password: str
+
+
+class TokenData(BaseModel):
+    id: Optional[str] = None
