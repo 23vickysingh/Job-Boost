@@ -17,6 +17,7 @@ def send_otp_email(to_email: str, otp: str) -> bool:
     """Send OTP via Brevo. Returns True on success."""
     api_key = os.getenv("BREVO_API_KEY")
     if not api_key:
+        print(api_key)
         print("Brevo API key not configured")
         return False
 

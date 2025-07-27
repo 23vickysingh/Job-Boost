@@ -7,20 +7,32 @@ services:
       - "8000:8000"
     env_file:
       - ./.env
+    volumes:
+      - ./BackEnd:/usr/src/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     # environment:
     #   - DATABASE_URL=${DATABASE_URL}
     #   - SECRET_KEY=${SECRET_KEY}
     #   - ALGORITHM=${ALGORITHM}
     #   - BREVO_API_KEY=${BREVO_API_KEY}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
-  # Frontend Service (React + Nginx)
+  # Frontend Service (React + Vite Dev Server)
   frontend:
-    build: ./FrontEnd
+    build: 
+      context: ./FrontEnd
+      dockerfile: Dockerfile.dev
     ports:
-      - "5173:80" # We map port 5173 on our machine to port 80 in the container
-
+      - "5173:5173" # Map port 5173 to 5173 for Vite dev server
+    volumes:
+      - ./FrontEnd:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
   # Database Service (MySQL)
   db:
     image: mysql:8.0
@@ -34,6 +46,21 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=caching_sha2_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER}", "-p${MYSQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
 
 volumes:
   mysql_data:
+  redis_data:
