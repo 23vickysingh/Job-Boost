@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import FAQ from "./pages/FAQ";
 import Pricing from "./pages/Pricing";
 import PageLoader from "@/components/PageLoader";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 const RouteChangeLoader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -60,12 +61,28 @@ const App = () => {
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/about" element={<About />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/personal-info" element={<PersonalInfo />} />
-                <Route path="/update-profile" element={<UpdatePersonalInfo />} />
-                <Route path="/resume-upload" element={<ResumeUpload />} />
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/pricing" element={<Pricing />} />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/personal-info" element={
+                  <ProtectedRoute>
+                    <PersonalInfo />
+                  </ProtectedRoute>
+                } />
+                <Route path="/update-profile" element={
+                  <ProtectedRoute>
+                    <UpdatePersonalInfo />
+                  </ProtectedRoute>
+                } />
+                <Route path="/resume-upload" element={
+                  <ProtectedRoute>
+                    <ResumeUpload />
+                  </ProtectedRoute>
+                } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </RouteChangeLoader>

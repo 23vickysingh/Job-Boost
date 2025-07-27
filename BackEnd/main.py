@@ -1,16 +1,32 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 from routers import user, profile, user_information
 from database import Base, engine
+from background_tasks import start_background_tasks, stop_background_tasks
+
+
+# Lifespan context manager for startup/shutdown events
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    print("Starting up Job Search Assistant API...")
+    await start_background_tasks()
+    yield
+    # Shutdown
+    print("Shutting down Job Search Assistant API...")
+    await stop_background_tasks()
+
 
 # Create all tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Job Search Assistant API",
-    description="Backend for job search assistant platform",
-    version="1.0.0"
+    description="Backend for job search assistant platform with AI-powered resume parsing",
+    version="2.0.0",
+    lifespan=lifespan
 )
 
 # Enable CORS for the frontend
@@ -33,3 +49,17 @@ app.add_middleware(
 app.include_router(user.router)
 app.include_router(profile.router)
 app.include_router(user_information.router)
+
+
+@app.get("/")
+async def root():
+    return {
+        "message": "Job Search Assistant API",
+        "version": "2.0.0",
+        "features": ["User Authentication", "Profile Management", "AI Resume Parsing"]
+    }
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "job-search-api"}

@@ -3,8 +3,8 @@ uvicorn
 sqlalchemy
 pymysql
 pydantic
-passlib[bcrypt]
-bcrypt
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
 python-jose
 requests
 beautifulsoup4
@@ -14,3 +14,8 @@ pdfminer.six
 docx2txt
 redis
 email-validator
+google-generativeai
+python-dotenv
+PyMuPDF
+celery
+python-docx

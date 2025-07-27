@@ -55,7 +55,7 @@ def upload_resume(
 ):
     os.makedirs("uploads", exist_ok=True)
     filename = f"{current_user.id}_{uuid4().hex}_{resume.filename}"
-    path = os.path.join("uploads", filename)
+    path = os.path.join("BackEnd/uploads", filename)
     with open(path, "wb") as f:
         f.write(resume.file.read())
 

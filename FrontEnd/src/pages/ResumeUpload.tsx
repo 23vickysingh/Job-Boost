@@ -71,35 +71,24 @@ const ResumeUpload = () => {
     if (!file) return;
 
     const form = new FormData();
-    form.append("file", file);
+    form.append("resume", file);
 
     setIsUploading(true);
-    await uploadResume(form);
-    setUploadProgress(0);
-
-    setIsUploading(false);
-    setUploadComplete(true);
-    toast.success("Resume uploaded successfully!");
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 2000);
-    
-    // Simulating upload progress
-    // const interval = setInterval(() => {
-    //   setUploadProgress((prev) => {
-    //     if (prev >= 100) {
-    //       clearInterval(interval);
-    //       setIsUploading(false);
-    //       setUploadComplete(true);
-    //       toast.success("Resume uploaded successfully!");
-    //       setTimeout(() => {
-    //         navigate('/dashboard');
-    //       }, 2000);
-    //       return 100;
-    //     }
-    //     return prev + 10;
-    //   });
-    // }, 300);
+    try {
+      await uploadResume(form);
+      setUploadProgress(100);
+      setIsUploading(false);
+      setUploadComplete(true);
+      toast.success("Resume uploaded successfully!");
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
+    } catch (error) {
+      setIsUploading(false);
+      setUploadProgress(0);
+      console.error("Resume upload failed:", error);
+      toast.error("Failed to upload resume. Please try again.");
+    }
   };
 
   const resetUpload = () => {

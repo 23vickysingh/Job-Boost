@@ -1,6 +1,59 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
+
+
+# ---------------- Resume Data Schemas ----------------
+class PersonalInfo(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    linkedin: Optional[str] = None
+    github: Optional[str] = None
+    location: Optional[str] = None
+
+
+class Experience(BaseModel):
+    role: Optional[str] = None
+    company: Optional[str] = None
+    dates: Optional[str] = None
+    location: Optional[str] = None
+    description: List[str] = []
+
+
+class Education(BaseModel):
+    degree: Optional[str] = None
+    institution: Optional[str] = None
+    dates: Optional[str] = None
+    gpa: Optional[str] = None
+    location: Optional[str] = None
+
+
+class Project(BaseModel):
+    name: Optional[str] = None
+    technologies: List[str] = []
+    description: Optional[str] = None
+    dates: Optional[str] = None
+    link: Optional[str] = None
+
+
+class ParsedResumeData(BaseModel):
+    personal_info: Optional[PersonalInfo] = None
+    summary: Optional[str] = None
+    experience: List[Experience] = []
+    education: List[Education] = []
+    skills: List[str] = []
+    projects: List[Project] = []
+    courses_undertaken: List[str] = []
+    achievements: List[str] = []
+    certifications: List[str] = []
+
+
+class ResumeProcessingStatus(BaseModel):
+    status: str  # "processing", "completed", "failed", "no_resume"
+    filename: Optional[str] = None
+    message: str
+    has_parsed_data: Optional[bool] = None
 
 
 # ---------------- User Schemas ----------------

@@ -11,6 +11,19 @@ api.interceptors.request.use((cfg) => {
   return cfg;
 });
 
+// Add response interceptor to handle authentication errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Clear token and redirect to login
+      localStorage.removeItem("token");
+      window.location.href = "/signin";
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
 
 /* Convenience wrappers */
@@ -37,11 +50,11 @@ export const savePersonalInfo = (data: Record<string, unknown>) =>
   api.post("/information/", data);
 
 export const uploadResume = (form: FormData) =>
-  api.post("/information/resume", form);
+  api.post("/profile/upload-resume", form);
 
 export const fetchPersonalInfo = () => api.get("/information/");
 
-export const fetchProfile = () => api.get("/information/");
+export const fetchProfile = () => api.get("/profile/");
 
 export const requestPasswordReset = (email: string) =>
   api.post("/user/request-password-reset", { user_id: email });

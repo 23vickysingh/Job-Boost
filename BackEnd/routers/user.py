@@ -70,7 +70,7 @@ def request_registration(request: schemas.RegistrationRequest, db: Session = Dep
     key = f"reg:{request.user_id}"
     redis_client.hset(key, mapping={"otp": otp, "password": hashed})
     redis_client.expire(key, timedelta(minutes=1))
-
+    print("your otp for current session is " , otp)
     if not send_otp_email(request.user_id, otp):
         redis_client.delete(key)
         raise HTTPException(status_code=400, detail="Invalid email id")
