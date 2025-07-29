@@ -20,10 +20,8 @@ load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
 if api_key:
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-pro')
 else:
     print("WARNING: GOOGLE_API_KEY not found. Resume parsing will use fallback method.")
-    model = None
 
 
 def fallback_resume_parsing(resume_text: str) -> Dict:
@@ -86,7 +84,7 @@ def extract_text_from_upload(file_bytes: bytes, filename: str) -> str:
 
 
 def extract_text_from_pdf_pymupdf(file_bytes: bytes) -> str:
-    """Alternative PDF text extraction using PyMuPDF for better accuracy."""
+    """Alternative PDF text extraction using PyMuPDF for better accuracy (matches your working one.py)."""
     try:
         doc = fitz.open(stream=file_bytes, filetype="pdf")
         text = ""
@@ -96,6 +94,7 @@ def extract_text_from_pdf_pymupdf(file_bytes: bytes) -> str:
         return text
     except Exception as e:
         print(f"PyMuPDF extraction failed: {e}")
+        # Fallback to pdfminer if PyMuPDF fails
         return extract_text(BytesIO(file_bytes))
 
 
@@ -108,8 +107,8 @@ async def parse_resume_with_gemini(resume_text: str) -> Dict:
         return {"error": "Empty resume text provided"}
     
     try:
-        # Configure the Gemini model
-        gemini_model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        # Configure the Gemini model (same as your working one.py)
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
         
         prompt = f"""
         You are an expert resume parser. Your task is to analyze the following resume text and extract the information into a structured JSON format.
@@ -172,16 +171,17 @@ async def parse_resume_with_gemini(resume_text: str) -> Dict:
         ---
         """
         
-        # Run the API call in a thread to avoid blocking
-        def generate_content():
-            response = gemini_model.generate_content(prompt)
+        # Direct API call (simplified like your working one.py)
+        def sync_generate():
+            response = model.generate_content(prompt)
             return response.text
         
+        # Run in thread pool to avoid blocking
         loop = asyncio.get_event_loop()
         with ThreadPoolExecutor() as executor:
-            response_text = await loop.run_in_executor(executor, generate_content)
+            response_text = await loop.run_in_executor(executor, sync_generate)
         
-        # Clean and parse the JSON response
+        # Clean and parse the JSON response (same as your working one.py)
         cleaned_response = response_text.strip().replace('```json', '').replace('```', '').strip()
         
         parsed_json = json.loads(cleaned_response)
