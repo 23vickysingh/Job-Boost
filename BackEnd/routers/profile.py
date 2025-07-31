@@ -7,7 +7,7 @@ from datetime import datetime
 
 import models, schemas
 from utils.resume_parser import extract_text_from_upload, parse_resume_details
-from database import get_db, ElasticsearchSync
+from database import get_db  # , ElasticsearchSync  # DISABLED - Elasticsearch not in use
 from auth.dependencies import get_current_user
 from background_tasks import get_resume_processor
 
@@ -88,23 +88,23 @@ async def create_or_update_profile(
         models.UserProfile.user_id == current_user.id
     ).first()
     
-    # Sync to Elasticsearch
-    try:
-        profile_data = {
-            "experiences": updated_profile.experiences or "",
-            "skills": updated_profile.skills or "",
-            "projects": updated_profile.projects or "",
-            "education": updated_profile.education or "",
-            "courses": updated_profile.courses or "",
-            "achievements": updated_profile.achievements or "",
-            "extra_curricular": updated_profile.extra_curricular or "",
-            "resume_filename": updated_profile.resume_filename,
-            "updated_at": datetime.utcnow().isoformat()
-        }
-        es_sync = ElasticsearchSync()
-        await es_sync.sync_user_profile(current_user.id, profile_data)
-    except Exception as e:
-        print(f"Failed to sync profile to Elasticsearch: {e}")
+    # Sync to Elasticsearch - DISABLED FOR NOW
+    # try:
+    #     profile_data = {
+    #         "experiences": updated_profile.experiences or "",
+    #         "skills": updated_profile.skills or "",
+    #         "projects": updated_profile.projects or "",
+    #         "education": updated_profile.education or "",
+    #         "courses": updated_profile.courses or "",
+    #         "achievements": updated_profile.achievements or "",
+    #         "extra_curricular": updated_profile.extra_curricular or "",
+    #         "resume_filename": updated_profile.resume_filename,
+    #         "updated_at": datetime.utcnow().isoformat()
+    #     }
+    #     es_sync = ElasticsearchSync()
+    #     await es_sync.sync_user_profile(current_user.id, profile_data)
+    # except Exception as e:
+    #     print(f"Failed to sync profile to Elasticsearch: {e}")
     
     return updated_profile
 
@@ -144,18 +144,18 @@ async def upload_resume_only(
         current_user.id, file_bytes, resume.filename
     )
     
-    # Sync to Elasticsearch
-    es_sync = ElasticsearchSync()
-    try:
-        await es_sync.sync_user_profile(current_user.id, {
-            "user_id": current_user.id,
-            "username": current_user.username,
-            "email": current_user.email,
-            "resume_filename": profile.resume_filename,
-            "updated_at": datetime.utcnow().isoformat()
-        })
-    except Exception as e:
-        print(f"Elasticsearch sync failed: {e}")
+    # Sync to Elasticsearch - DISABLED FOR NOW
+    # es_sync = ElasticsearchSync()
+    # try:
+    #     await es_sync.sync_user_profile(current_user.id, {
+    #         "user_id": current_user.id,
+    #         "username": current_user.username,
+    #         "email": current_user.email,
+    #         "resume_filename": profile.resume_filename,
+    #         "updated_at": datetime.utcnow().isoformat()
+    #     })
+    # except Exception as e:
+    #     print(f"Elasticsearch sync failed: {e}")
     
     return {
         "message": "Resume uploaded successfully and is being processed",

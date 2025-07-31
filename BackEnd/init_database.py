@@ -7,8 +7,8 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from database import engine, Base, get_elasticsearch_client
-from elasticsearch_config import initialize_elasticsearch_indices
+from database import engine, Base  # , get_elasticsearch_client  # DISABLED - Elasticsearch not in use
+# from elasticsearch_config import initialize_elasticsearch_indices  # DISABLED - Elasticsearch not in use
 import models
 
 def create_database_tables():
@@ -21,11 +21,14 @@ def create_database_tables():
 
 def create_elasticsearch_indices():
     """Create all Elasticsearch indices."""
-    try:
-        initialize_elasticsearch_indices()
-        print("✅ Elasticsearch indices created successfully!")
-    except Exception as e:
-        print(f"❌ Error creating Elasticsearch indices: {e}")
+    # DISABLED FOR NOW - Elasticsearch not in use
+    print("⚠️  Elasticsearch index creation disabled")
+    return True
+    # try:
+    #     initialize_elasticsearch_indices()
+    #     print("✅ Elasticsearch indices created successfully!")
+    # except Exception as e:
+    #     print(f"❌ Error creating Elasticsearch indices: {e}")
 
 def main():
     print("🚀 Initializing Job-Boost database...")

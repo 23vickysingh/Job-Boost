@@ -7,8 +7,6 @@ passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
 python-jose
 requests
-beautifulsoup4
-pandas
 python-multipart
 pdfminer.six
 docx2txt
@@ -17,8 +15,5 @@ email-validator
 google-generativeai
 python-dotenv
 PyMuPDF
-celery
 python-docx
-elasticsearch==8.11.0
-asyncpg
-alembic
+# elasticsearch==8.11.0  # DISABLED - Elasticsearch not in use
