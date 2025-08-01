@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routers import user, profile, user_information
+from routers import user, profile
 from database import Base, engine
 from background_tasks import start_background_tasks, stop_background_tasks
 
@@ -48,7 +48,6 @@ app.add_middleware(
 # Include routers
 app.include_router(user.router)
 app.include_router(profile.router)
-app.include_router(user_information.router)
 
 
 @app.get("/")

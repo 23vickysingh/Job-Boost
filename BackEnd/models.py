@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Float
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Float, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -13,43 +13,25 @@ class User(Base):
     password = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    information = relationship("UserInformation", back_populates="user", uselist=False)
     profile = relationship("UserProfile", back_populates="user", uselist=False)
     job_matches = relationship("JobMatch", back_populates="user")
 
 
-class UserInformation(Base):
-    __tablename__ = "user_information"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True)
-    first_name = Column(String(100))
-    last_name = Column(String(100))
-    phone_number = Column(String(50))
-    country = Column(String(100))
-    state = Column(String(100))
-    city = Column(String(100))
-    street = Column(String(255))
-    alternate_email = Column(String(255))
-    resume_path = Column(String(255))
-
-    user = relationship("User", back_populates="information")
-
-
 class UserProfile(Base):
-    __tablename__ = "user_profiles"
+    __tablename__ = "user_profile"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True)
-    experiences = Column(Text)
-    skills = Column(Text)
-    projects = Column(Text)
-    education = Column(Text)
-    courses = Column(Text)
-    achievements = Column(Text)
-    extra_curricular = Column(Text)
-    resume_filename = Column(String(255))
-    resume_data = Column(Text)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    query = Column(String(255), nullable=True)  # Job title/query
+    location = Column(String(255), nullable=True)  # Job location
+    mode_of_job = Column(String(50), nullable=True)  # remote, hybrid, in-place
+    work_experience = Column(String(100), nullable=True)  # Experience level
+    employment_types = Column(JSON, nullable=True)  # List of employment types
+    company_types = Column(JSON, nullable=True)  # Company types preferences
+    job_requirements = Column(Text, nullable=True)  # Additional requirements
+    resume_location = Column(String(500), nullable=True)  # Path to uploaded resume
+    resume_parsed = Column(JSON, nullable=True)  # Parsed resume data as JSON
+    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="profile")
 

@@ -86,53 +86,50 @@ class UserOut(BaseModel):
         from_attributes = True
 
 
-# ---------------- User Information Schemas ----------------
-class UserInformationBase(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    phone_number: Optional[str] = None
-    country: Optional[str] = None
-    state: Optional[str] = None
-    city: Optional[str] = None
-    street: Optional[str] = None
-    alternate_email: Optional[EmailStr] = None
-    resume_path: Optional[str] = None
+# ---------------- User Profile Schemas ----------------
+class JobPreferencesCreate(BaseModel):
+    query: str  # Job title/query - required
+    location: str  # Job location - required
+    mode_of_job: str  # remote, hybrid, in-place - required
+    work_experience: str  # Experience level - required
+    employment_types: List[str]  # List of employment types - required
+    company_types: Optional[List[str]] = None  # Company types preferences
+    job_requirements: Optional[str] = None  # Additional requirements
 
 
-class UserInformationCreate(UserInformationBase):
-    pass
-
-
-class UserInformationOut(UserInformationBase):
-    id: int
-
-    class Config:
-        from_attributes = True
-
-
-# ---------------- Profile Schemas ----------------
 class UserProfileBase(BaseModel):
-    experiences: Optional[str] = None
-    skills: Optional[str] = None
-    projects: Optional[str] = None
-    education: Optional[str] = None
-    courses: Optional[str] = None
-    achievements: Optional[str] = None
-    extra_curricular: Optional[str] = None
+    query: Optional[str] = None
+    location: Optional[str] = None
+    mode_of_job: Optional[str] = None
+    work_experience: Optional[str] = None
+    employment_types: Optional[List[str]] = None
+    company_types: Optional[List[str]] = None
+    job_requirements: Optional[str] = None
+    resume_location: Optional[str] = None
 
 
 class UserProfileCreate(UserProfileBase):
-    resume_filename: Optional[str] = None
-    resume_data: Optional[str] = None
+    pass
+
+
+class UserProfileUpdate(UserProfileBase):
+    pass
 
 
 class UserProfileOut(UserProfileBase):
     id: int
-    resume_filename: Optional[str] = None
-    resume_data: Optional[str] = None
+    user_id: int
+    resume_parsed: Optional[dict] = None
+    last_updated: datetime
 
     class Config:
         from_attributes = True
+
+
+class ResumeUploadResponse(BaseModel):
+    message: str
+    resume_location: str
+    status: str
 
 
 # ---------------- Job Schemas ----------------
