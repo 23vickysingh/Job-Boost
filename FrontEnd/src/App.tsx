@@ -13,7 +13,9 @@ import About from "./pages/About";
 import Dashboard from "./pages/Dashboard";
 import ResumeUpload from "./pages/ResumeUpload";
 import PersonalInfo from "./pages/PersonalInfo";
+import JobPreferences from "./pages/JobPreferences";
 import UpdatePersonalInfo from "./pages/UpdatePersonalInfo";
+import UpdateJobPreferences from "./pages/UpdateJobPreferences";
 import NotFound from "./pages/NotFound";
 import FAQ from "./pages/FAQ";
 import Pricing from "./pages/Pricing";
@@ -70,12 +72,22 @@ const App = () => {
                 } />
                 <Route path="/personal-info" element={
                   <ProtectedRoute>
-                    <PersonalInfo />
+                    <JobPreferences />
+                  </ProtectedRoute>
+                } />
+                <Route path="/job-preferences" element={
+                  <ProtectedRoute>
+                    <JobPreferences />
                   </ProtectedRoute>
                 } />
                 <Route path="/update-profile" element={
                   <ProtectedRoute>
-                    <UpdatePersonalInfo />
+                    <UpdateJobPreferences />
+                  </ProtectedRoute>
+                } />
+                <Route path="/update-job-preferences" element={
+                  <ProtectedRoute>
+                    <UpdateJobPreferences />
                   </ProtectedRoute>
                 } />
                 <Route path="/resume-upload" element={

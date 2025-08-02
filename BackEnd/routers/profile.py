@@ -135,16 +135,111 @@ async def get_profile(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Get user profile."""
+    """Get user profile with user information."""
     
     profile = db.query(models.UserProfile).filter(
         models.UserProfile.user_id == current_user.id
     ).first()
     
     if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
+        # Create empty profile if it doesn't exist
+        profile = models.UserProfile(
+            user_id=current_user.id,
+            query=None,
+            location=None,
+            mode_of_job=None,
+            work_experience=None,
+            employment_types=None,
+            company_types=None,
+            job_requirements=None,
+            resume_location=None,
+            resume_parsed=None
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
     
-    return profile
+    # Create profile response with user information
+    profile_dict = {
+        "id": profile.id,
+        "user_id": profile.user_id,
+        "user_email": current_user.user_id,  # user_id field contains email
+        "user_name": None,  # Extract from resume if available
+        "query": profile.query,
+        "location": profile.location,
+        "mode_of_job": profile.mode_of_job,
+        "work_experience": profile.work_experience,
+        "employment_types": profile.employment_types,
+        "company_types": profile.company_types,
+        "job_requirements": profile.job_requirements,
+        "resume_location": profile.resume_location,
+        "resume_parsed": profile.resume_parsed,
+        "last_updated": profile.last_updated
+    }
+    
+    # Extract name from resume if available
+    if profile.resume_parsed and isinstance(profile.resume_parsed, dict):
+        personal_info = profile.resume_parsed.get("personal_info", {})
+        if personal_info and personal_info.get("name"):
+            profile_dict["user_name"] = personal_info["name"]
+    
+    return profile_dict
+
+
+@router.get("/complete", response_model=schemas.CompleteUserProfile)
+async def get_complete_profile(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Get complete user profile including user details."""
+    
+    profile = db.query(models.UserProfile).filter(
+        models.UserProfile.user_id == current_user.id
+    ).first()
+    
+    if not profile:
+        # Create empty profile if it doesn't exist
+        profile = models.UserProfile(
+            user_id=current_user.id,
+            query=None,
+            location=None,
+            mode_of_job=None,
+            work_experience=None,
+            employment_types=None,
+            company_types=None,
+            job_requirements=None,
+            resume_location=None,
+            resume_parsed=None
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+    
+    # Create complete profile response
+    complete_profile = {
+        "id": profile.id,
+        "user_id": profile.user_id,
+        "user_email": current_user.user_id,  # user_id field contains email
+        "user_name": None,  # Extract from resume if available
+        "query": profile.query,
+        "location": profile.location,
+        "mode_of_job": profile.mode_of_job,
+        "work_experience": profile.work_experience,
+        "employment_types": profile.employment_types,
+        "company_types": profile.company_types,
+        "job_requirements": profile.job_requirements,
+        "resume_location": profile.resume_location,
+        "resume_parsed": profile.resume_parsed,
+        "last_updated": profile.last_updated
+    }
+    
+    # Extract name from resume if available
+    if profile.resume_parsed and isinstance(profile.resume_parsed, dict):
+        personal_info = profile.resume_parsed.get("personal_info", {})
+        if personal_info and personal_info.get("name"):
+            complete_profile["user_name"] = personal_info["name"]
+    
+    return complete_profile
 
 
 @router.put("/", response_model=schemas.UserProfileOut)

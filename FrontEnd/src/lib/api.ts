@@ -13,8 +13,12 @@ api.interceptors.request.use((cfg) => {
 
 // Add response interceptor to handle authentication errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`API Success: ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
+    return response;
+  },
   (error) => {
+    console.error(`API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || 'Network Error'}`);
     if (error.response?.status === 401) {
       // Clear token and redirect to login
       localStorage.removeItem("token");
@@ -43,18 +47,30 @@ export const login = (email: string, password: string) =>
     { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
   );
 
+// Job Preferences API
+export const saveJobPreferences = (data: Record<string, unknown>) =>
+  api.post("/profile/job-preferences", data);
+
+export const uploadResume = (form: FormData) =>
+  api.post("/profile/upload-resume", form);
+
+export const fetchProfile = () => api.get("/profile/");
+
+export const fetchCompleteProfile = () => api.get("/profile/complete");
+
+export const updateProfile = (data: Record<string, unknown>) =>
+  api.put("/profile/", data);
+
+export const deleteProfile = () => api.delete("/profile/");
+
+// Legacy API endpoints (deprecated)
 export const uploadProfile = (form: FormData) =>
   api.post("/profile/", form);
 
 export const savePersonalInfo = (data: Record<string, unknown>) =>
   api.post("/information/", data);
 
-export const uploadResume = (form: FormData) =>
-  api.post("/profile/upload-resume", form);
-
 export const fetchPersonalInfo = () => api.get("/information/");
-
-export const fetchProfile = () => api.get("/profile/");
 
 export const requestPasswordReset = (email: string) =>
   api.post("/user/request-password-reset", { user_id: email });

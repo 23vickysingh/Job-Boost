@@ -119,6 +119,20 @@ class UserProfileUpdate(UserProfileBase):
 class UserProfileOut(UserProfileBase):
     id: int
     user_id: int
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+    resume_parsed: Optional[dict] = None
+    last_updated: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CompleteUserProfile(UserProfileBase):
+    id: int
+    user_id: int
+    user_email: str
+    user_name: Optional[str] = None
     resume_parsed: Optional[dict] = None
     last_updated: datetime
 

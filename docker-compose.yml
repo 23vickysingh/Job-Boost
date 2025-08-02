@@ -9,6 +9,7 @@ services:
       - ./.env
     volumes:
       - ./BackEnd:/usr/src/app
+      - ./uploads:/app/uploads
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       postgres:
