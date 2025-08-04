@@ -16,4 +16,5 @@ google-generativeai
 python-dotenv
 PyMuPDF
 python-docx
+asyncio
 # elasticsearch==8.11.0  # DISABLED - Elasticsearch not in use

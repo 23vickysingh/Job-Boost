@@ -9,6 +9,7 @@ import models, schemas
 from utils.resume_parser import extract_text_from_upload, parse_resume_with_gemini
 from database import get_db
 from auth.dependencies import get_current_user
+from services.job_matcher import get_job_matching_service
 
 router = APIRouter(prefix="/profile", tags=["Profile"])
 
@@ -123,11 +124,63 @@ async def upload_resume(
     db.commit()
     db.refresh(profile)
     
-    return schemas.ResumeUploadResponse(
-        message="Resume uploaded and parsed successfully",
-        resume_location=file_path,
-        status="success"
-    )
+    print(f"✅ Resume uploaded and parsed successfully for user {current_user.id}")
+    
+    # 🚀 NEW: Trigger automatic job matching if preferences are complete
+    job_matches_found = 0
+    matching_status = "skipped"
+    matching_message = ""
+    
+    try:
+        # Check if user has job preferences set
+        if profile.query and profile.location:
+            print(f"🔍 Starting automatic job matching for user {current_user.id}")
+            print(f"   Query: {profile.query}")
+            print(f"   Location: {profile.location}")
+            
+            # Get job matching service
+            job_service = get_job_matching_service()
+            if job_service:
+                # Process job matching
+                result = job_service.process_job_matching_for_user(current_user.id, db)
+                
+                if result["success"]:
+                    job_matches_found = result["matches_created"]
+                    matching_status = "completed"
+                    matching_message = f"Found {job_matches_found} job matches"
+                    print(f"🎉 Automatic job matching completed: {job_matches_found} matches found")
+                else:
+                    matching_status = "failed"
+                    matching_message = result["message"]
+                    print(f"❌ Automatic job matching failed: {result['message']}")
+            else:
+                matching_status = "unavailable"
+                matching_message = "Job matching service not available (missing API key)"
+                print("⚠️ Job matching service not available - missing JSEARCH_API_KEY")
+        else:
+            matching_status = "incomplete_preferences"
+            matching_message = "Job preferences not complete (missing query or location)"
+            print("⚠️ Skipping automatic job matching - job preferences incomplete")
+            
+    except Exception as e:
+        matching_status = "error"
+        matching_message = f"Job matching error: {str(e)}"
+        print(f"❌ Error during automatic job matching: {str(e)}")
+        # Don't fail the resume upload if job matching fails
+    
+    # Return enhanced response with job matching information
+    response_data = {
+        "message": "Resume uploaded and parsed successfully",
+        "resume_location": file_path,
+        "status": "success",
+        "job_matching": {
+            "status": matching_status,
+            "message": matching_message,
+            "matches_found": job_matches_found
+        }
+    }
+    
+    return response_data
 
 
 @router.get("/", response_model=schemas.UserProfileOut)

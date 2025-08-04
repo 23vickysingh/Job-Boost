@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 import models
 from database import SessionLocal
 from utils.resume_parser import process_resume_upload, format_parsed_data_for_database
+from services.job_scheduler import job_scheduler
 
 
 class ResumeProcessor:
@@ -121,12 +122,28 @@ resume_processor = ResumeProcessor()
 
 async def start_background_tasks():
     """Start all background tasks."""
+    print("🚀 Starting background tasks...")
+    
+    # Start resume processor
     asyncio.create_task(resume_processor.start_processor())
+    print("   ✅ Resume processor started")
+    
+    # Start job scheduler
+    asyncio.create_task(job_scheduler.start_scheduler())
+    print("   ✅ Job scheduler started (12-hour intervals)")
 
 
 async def stop_background_tasks():
     """Stop all background tasks."""
+    print("🛑 Stopping background tasks...")
+    
+    # Stop resume processor
     await resume_processor.stop_processor()
+    print("   ✅ Resume processor stopped")
+    
+    # Stop job scheduler
+    await job_scheduler.stop_scheduler()
+    print("   ✅ Job scheduler stopped")
 
 
 def get_resume_processor() -> ResumeProcessor:

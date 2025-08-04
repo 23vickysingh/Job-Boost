@@ -144,15 +144,46 @@ class ResumeUploadResponse(BaseModel):
     message: str
     resume_location: str
     status: str
+    job_matching: Optional[dict] = None
 
 
 # ---------------- Job Schemas ----------------
 class JobBase(BaseModel):
+    job_id: str
     title: str
     company: str
     location: str
-    description: str
+    description: Optional[str] = None
     apply_link: str
+    job_employment_type: Optional[str] = None
+    job_city: Optional[str] = None
+    job_state: Optional[str] = None
+    job_country: Optional[str] = None
+    job_latitude: Optional[float] = None
+    job_longitude: Optional[float] = None
+    job_benefits: Optional[List[str]] = None
+    job_google_link: Optional[str] = None
+    job_offer_expiration_datetime_utc: Optional[str] = None
+    job_required_experience: Optional[dict] = None
+    job_required_skills: Optional[List[str]] = None
+    job_required_education: Optional[dict] = None
+    job_experience_in_place_of_education: Optional[str] = None
+    job_min_salary: Optional[float] = None
+    job_max_salary: Optional[float] = None
+    job_salary_currency: Optional[str] = None
+    job_salary_period: Optional[str] = None
+    job_highlights: Optional[dict] = None
+    job_job_title: Optional[str] = None
+    job_posting_language: Optional[str] = None
+    job_onet_soc: Optional[str] = None
+    job_onet_job_zone: Optional[str] = None
+    job_naics_code: Optional[str] = None
+    job_naics_name: Optional[str] = None
+    employer_logo: Optional[str] = None
+    employer_website: Optional[str] = None
+    employer_company_type: Optional[str] = None
+    employer_reviews_count: Optional[int] = None
+    employer_rating: Optional[float] = None
 
 
 class JobCreate(JobBase):
@@ -161,9 +192,22 @@ class JobCreate(JobBase):
 
 class JobOut(JobBase):
     id: int
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class JobMatchRequest(BaseModel):
+    user_id: Optional[int] = None  # If not provided, use current user
+
+
+class JobMatchingResult(BaseModel):
+    message: str
+    jobs_processed: int
+    matches_created: int
+    user_id: int
 
 
 # ---------------- Job Match Schemas ----------------

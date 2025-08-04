@@ -364,17 +364,18 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditClick, profile }) => {
 
       {/* Enhanced Resume Information Section */}
       {hasResumeData && (
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden relative">
           <CardHeader className="bg-gradient-to-r from-green-500 to-blue-600 text-white">
             <CardTitle className="text-lg font-semibold flex items-center">
               <FileText className="mr-2 h-5 w-5" />
               Resume Information
             </CardTitle>
             <p className="text-green-100 text-sm mt-1">
-              Comprehensive overview of your professional background
+              Comprehensive overview of your professional background (scroll to view all sections)
             </p>
           </CardHeader>
-          <CardContent className="p-6 space-y-8">
+          <CardContent className="h-96 overflow-y-auto p-6 space-y-8 scroll-smooth relative">
+            <div className="space-y-8">
             
             {/* Professional Summary */}
             {resumeData?.summary && (
@@ -656,7 +657,10 @@ const UserProfile: React.FC<UserProfileProps> = ({ onEditClick, profile }) => {
                 </div>
               </div>
             )}
+            </div>
           </CardContent>
+          {/* Scroll indicator gradient */}
+          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white dark:from-slate-800 to-transparent pointer-events-none opacity-70"></div>
         </Card>
       )}
 
