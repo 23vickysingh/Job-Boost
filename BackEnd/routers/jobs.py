@@ -46,7 +46,6 @@ async def trigger_job_matching(
             detail="Job matching service not available. Please check JSEARCH_API_KEY environment variable."
         )
     
-    print(f"🎯 Triggering job matching for user {target_user_id}")
     
     # Process job matching
     result = job_service.process_job_matching_for_user(target_user_id, db)
@@ -82,7 +81,6 @@ async def get_user_job_matches(
         models.JobMatch.relevance_score >= min_score
     ).order_by(models.JobMatch.relevance_score.desc()).limit(limit).all()
     
-    print(f"📊 Found {len(matches)} job matches for user {current_user.id}")
     
     return matches
 
@@ -125,7 +123,6 @@ async def delete_job_match(
     db.delete(match)
     db.commit()
     
-    print(f"🗑️ Deleted job match {job_match_id} for user {current_user.id}")
     
     return {"message": "Job match deleted successfully"}
 
@@ -161,7 +158,6 @@ async def get_jobs(
     
     jobs = query.order_by(models.Job.created_at.desc()).limit(limit).all()
     
-    print(f"📋 Retrieved {len(jobs)} jobs from database")
     
     return jobs
 
@@ -220,7 +216,6 @@ async def force_update_all_users(
     This bypasses the 24-hour threshold and updates all users immediately.
     """
     
-    print(f"🚀 Manual force update triggered by user {current_user.id}")
     
     try:
         # Get job scheduler
@@ -236,7 +231,6 @@ async def force_update_all_users(
         }
         
     except Exception as e:
-        print(f"❌ Force update failed: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Force update failed: {str(e)}"

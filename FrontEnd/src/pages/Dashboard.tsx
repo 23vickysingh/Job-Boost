@@ -48,14 +48,6 @@ const Dashboard = () => {
   
   const profile = profileResponse?.data;
   
-  // Debug logging
-  React.useEffect(() => {
-    console.log("Profile loading state:", profileLoading);
-    console.log("Profile error:", profileError);
-    console.log("Profile response:", profileResponse);
-    console.log("Profile data:", profile);
-  }, [profileLoading, profileError, profileResponse, profile]);
-  
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />

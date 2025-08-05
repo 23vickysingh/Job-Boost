@@ -11,11 +11,11 @@ from background_tasks import start_background_tasks, stop_background_tasks
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    print("Starting up Job Search Assistant API...")
+    pass
     await start_background_tasks()
     yield
     # Shutdown
-    print("Shutting down Job Search Assistant API...")
+    pass
     await stop_background_tasks()
 
 

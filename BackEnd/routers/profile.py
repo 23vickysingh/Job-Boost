@@ -37,6 +37,16 @@ async def create_job_preferences(
         existing_profile.company_types = preferences.company_types
         existing_profile.job_requirements = preferences.job_requirements
         existing_profile.last_updated = datetime.utcnow()
+        
+        # Trigger job matching if preferences changed and resume exists
+        try:
+            job_service = get_job_matching_service()
+            if (job_service and existing_profile.query and existing_profile.location 
+                and existing_profile.resume_parsed):
+                job_service.process_job_matching_for_user(current_user.id, db)
+        except Exception:
+            pass  # Don't fail preference update if job matching fails
+        
         db.commit()
         db.refresh(existing_profile)
         return existing_profile
@@ -55,6 +65,17 @@ async def create_job_preferences(
         db.add(new_profile)
         db.commit()
         db.refresh(new_profile)
+        
+        # Trigger job matching for new profile if resume exists
+        try:
+            job_service = get_job_matching_service()
+            if (job_service and new_profile.query and new_profile.location):
+                # Check if user has uploaded resume
+                if new_profile.resume_parsed:
+                    job_service.process_job_matching_for_user(current_user.id, db)
+        except Exception:
+            pass  # Don't fail profile creation if job matching fails
+        
         return new_profile
 
 
@@ -124,9 +145,7 @@ async def upload_resume(
     db.commit()
     db.refresh(profile)
     
-    print(f"✅ Resume uploaded and parsed successfully for user {current_user.id}")
-    
-    # 🚀 NEW: Trigger automatic job matching if preferences are complete
+    # Trigger automatic job matching if preferences are complete
     job_matches_found = 0
     matching_status = "skipped"
     matching_message = ""
@@ -134,9 +153,6 @@ async def upload_resume(
     try:
         # Check if user has job preferences set
         if profile.query and profile.location:
-            print(f"🔍 Starting automatic job matching for user {current_user.id}")
-            print(f"   Query: {profile.query}")
-            print(f"   Location: {profile.location}")
             
             # Get job matching service
             job_service = get_job_matching_service()
@@ -148,24 +164,19 @@ async def upload_resume(
                     job_matches_found = result["matches_created"]
                     matching_status = "completed"
                     matching_message = f"Found {job_matches_found} job matches"
-                    print(f"🎉 Automatic job matching completed: {job_matches_found} matches found")
                 else:
                     matching_status = "failed"
                     matching_message = result["message"]
-                    print(f"❌ Automatic job matching failed: {result['message']}")
             else:
                 matching_status = "unavailable"
                 matching_message = "Job matching service not available (missing API key)"
-                print("⚠️ Job matching service not available - missing JSEARCH_API_KEY")
         else:
             matching_status = "incomplete_preferences"
             matching_message = "Job preferences not complete (missing query or location)"
-            print("⚠️ Skipping automatic job matching - job preferences incomplete")
             
     except Exception as e:
         matching_status = "error"
         matching_message = f"Job matching error: {str(e)}"
-        print(f"❌ Error during automatic job matching: {str(e)}")
         # Don't fail the resume upload if job matching fails
     
     # Return enhanced response with job matching information
@@ -232,9 +243,11 @@ async def get_profile(
     
     # Extract name from resume if available
     if profile.resume_parsed and isinstance(profile.resume_parsed, dict):
-        personal_info = profile.resume_parsed.get("personal_info", {})
-        if personal_info and personal_info.get("name"):
-            profile_dict["user_name"] = personal_info["name"]
+        parsed_data = profile.resume_parsed.get("parsed_data", {})
+        if parsed_data and isinstance(parsed_data, dict):
+            personal_info = parsed_data.get("personal_info", {})
+            if isinstance(personal_info, dict) and personal_info.get("name"):
+                profile_dict["user_name"] = personal_info["name"]
     
     return profile_dict
 
@@ -288,9 +301,11 @@ async def get_complete_profile(
     
     # Extract name from resume if available
     if profile.resume_parsed and isinstance(profile.resume_parsed, dict):
-        personal_info = profile.resume_parsed.get("personal_info", {})
-        if personal_info and personal_info.get("name"):
-            complete_profile["user_name"] = personal_info["name"]
+        parsed_data = profile.resume_parsed.get("parsed_data", {})
+        if parsed_data and isinstance(parsed_data, dict):
+            personal_info = parsed_data.get("personal_info", {})
+            if isinstance(personal_info, dict) and personal_info.get("name"):
+                complete_profile["user_name"] = personal_info["name"]
     
     return complete_profile
 
@@ -340,40 +355,17 @@ async def delete_profile(
     if profile.resume_location and os.path.exists(profile.resume_location):
         try:
             os.remove(profile.resume_location)
-        except Exception as e:
-            print(f"Failed to delete resume file: {e}")
+        except Exception:
+            pass  # Continue even if file deletion fails
     
     db.delete(profile)
     db.commit()
     
     return {"message": "Profile deleted successfully"}
-    if profile.resume_data and profile.resume_data.strip():
-        try:
-            import json
-            parsed_data = json.loads(profile.resume_data)
-            return {
-                "status": "completed",
-                "filename": profile.resume_filename,
-                "message": "Resume processed successfully",
-                "has_parsed_data": True
-            }
-        except:
-            return {
-                "status": "completed",
-                "filename": profile.resume_filename,
-                "message": "Resume processed successfully",
-                "has_parsed_data": False
-            }
-    
-    return {
-        "status": "unknown",
-        "filename": profile.resume_filename,
-        "message": "Resume processing status unknown"
-    }
 
 
 @router.delete("/resume")
-def delete_resume(
+async def delete_resume(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -385,8 +377,48 @@ def delete_resume(
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     
-    profile.resume_filename = None
-    profile.resume_data = None
+    # Delete resume file if it exists
+    if profile.resume_location and os.path.exists(profile.resume_location):
+        try:
+            os.remove(profile.resume_location)
+        except Exception:
+            pass
+    
+    # Clear resume data
+    profile.resume_location = None
+    profile.resume_parsed = None
+    profile.last_updated = datetime.utcnow()
     db.commit()
     
     return {"message": "Resume deleted successfully"}
+
+
+@router.get("/resume-status")
+async def get_resume_status(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Get resume upload and processing status."""
+    profile = db.query(models.UserProfile).filter(
+        models.UserProfile.user_id == current_user.id
+    ).first()
+    
+    if not profile or not profile.resume_parsed:
+        return {
+            "status": "not_uploaded",
+            "message": "No resume uploaded"
+        }
+    
+    if profile.resume_parsed and profile.resume_parsed.get("parsed_data"):
+        return {
+            "status": "completed",
+            "filename": profile.resume_parsed.get("filename"),
+            "message": "Resume processed successfully",
+            "has_parsed_data": True
+        }
+    
+    return {
+        "status": "processing",
+        "filename": profile.resume_parsed.get("filename"),
+        "message": "Resume processing in progress"
+    }

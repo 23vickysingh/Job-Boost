@@ -21,12 +21,9 @@ class JobScheduler:
     async def start_scheduler(self):
         """Start the background job scheduler."""
         if self.is_running:
-            print("⚠️ Job scheduler is already running")
             return
             
         self.is_running = True
-        print("🕒 Job scheduler started - checking every 12 hours")
-        print(f"   Will update users who haven't been matched in 24+ hours")
         
         while self.is_running:
             try:
@@ -37,21 +34,17 @@ class JobScheduler:
                     await self._process_scheduled_job_updates()
                     
             except asyncio.CancelledError:
-                print("🛑 Job scheduler cancelled")
                 break
             except Exception as e:
-                print(f"❌ Error in job scheduler: {e}")
                 # Continue running even if one cycle fails
                 continue
     
     async def stop_scheduler(self):
         """Stop the background job scheduler."""
         self.is_running = False
-        print("🛑 Job scheduler stopped")
     
     async def _process_scheduled_job_updates(self):
         """Process job updates for users who need refreshed matches."""
-        print("🔄 Starting scheduled job matching updates...")
         
         db = SessionLocal()
         try:
@@ -59,15 +52,12 @@ class JobScheduler:
             users_to_update = self._get_users_needing_updates(db)
             
             if not users_to_update:
-                print("✅ No users need job updates at this time")
                 return
             
-            print(f"👥 Found {len(users_to_update)} users needing job updates")
             
             # Get job matching service
             job_service = get_job_matching_service()
             if not job_service:
-                print("❌ Job matching service not available - skipping scheduled updates")
                 return
             
             # Process each user
@@ -76,14 +66,12 @@ class JobScheduler:
             
             for user_profile in users_to_update:
                 try:
-                    print(f"🔍 Updating jobs for user {user_profile.user_id}")
                     
                     # Process job matching for this user
                     result = job_service.process_job_matching_for_user(user_profile.user_id, db)
                     
                     if result["success"]:
                         successful_updates += 1
-                        print(f"✅ User {user_profile.user_id}: {result['matches_created']} new matches")
                         
                         # Update the last job search timestamp
                         user_profile.last_job_search = datetime.utcnow()
@@ -91,20 +79,13 @@ class JobScheduler:
                         
                     else:
                         failed_updates += 1
-                        print(f"❌ User {user_profile.user_id}: {result['message']}")
                         
                 except Exception as e:
                     failed_updates += 1
-                    print(f"❌ Error updating jobs for user {user_profile.user_id}: {e}")
                     continue
             
-            print(f"📊 Scheduled update summary:")
-            print(f"   Successful updates: {successful_updates}")
-            print(f"   Failed updates: {failed_updates}")
-            print(f"   Total processed: {len(users_to_update)}")
-            
         except Exception as e:
-            print(f"❌ Error in scheduled job processing: {e}")
+            pass
         finally:
             db.close()
     
@@ -132,7 +113,6 @@ class JobScheduler:
     
     async def force_update_all_users(self):
         """Force job update for all eligible users (manual trigger)."""
-        print("🚀 Force updating jobs for all eligible users...")
         
         db = SessionLocal()
         try:
@@ -146,38 +126,30 @@ class JobScheduler:
             ).all()
             
             if not all_eligible_users:
-                print("📭 No eligible users found for job updates")
                 return
             
-            print(f"👥 Force updating {len(all_eligible_users)} eligible users")
             
             # Get job matching service
             job_service = get_job_matching_service()
             if not job_service:
-                print("❌ Job matching service not available")
                 return
             
             # Process each user
             for user_profile in all_eligible_users:
                 try:
-                    print(f"🔍 Force updating user {user_profile.user_id}")
                     result = job_service.process_job_matching_for_user(user_profile.user_id, db)
                     
                     if result["success"]:
-                        print(f"✅ User {user_profile.user_id}: {result['matches_created']} matches")
                         user_profile.last_job_search = datetime.utcnow()
                         db.commit()
                     else:
-                        print(f"❌ User {user_profile.user_id}: {result['message']}")
+                        pass
                         
                 except Exception as e:
-                    print(f"❌ Error force updating user {user_profile.user_id}: {e}")
                     continue
             
-            print("🎉 Force update completed for all eligible users")
-            
         except Exception as e:
-            print(f"❌ Error in force update: {e}")
+            pass
         finally:
             db.close()
 

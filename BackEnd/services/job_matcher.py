@@ -50,21 +50,18 @@ class JobMatchingService:
             params["employment_types"] = employment_type
         
         try:
-            print(f"🔍 Searching for jobs: {params['query']}")
             response = requests.get(url, headers=self.headers, params=params)
             response.raise_for_status()
             
             data = response.json()
-            print(f"✅ Found {len(data.get('data', []))} jobs from search")
             return data
             
         except requests.exceptions.HTTPError as http_err:
-            print(f"❌ HTTP error during job search: {http_err}")
-            print(f"Response content: {response.text}")
+            pass
         except requests.exceptions.RequestException as err:
-            print(f"❌ Request error during job search: {err}")
+            pass
         except Exception as e:
-            print(f"❌ Unexpected error during job search: {e}")
+            pass
         
         return None
     
@@ -82,20 +79,18 @@ class JobMatchingService:
         params = {"job_id": job_id}
         
         try:
-            print(f"📄 Fetching details for job_id: {job_id}")
             response = requests.get(url, headers=self.headers, params=params)
             response.raise_for_status()
             
             data = response.json()
-            print(f"✅ Successfully fetched job details for {job_id}")
             return data
             
         except requests.exceptions.HTTPError as http_err:
-            print(f"❌ HTTP error fetching job details for {job_id}: {http_err}")
+            pass
         except requests.exceptions.RequestException as err:
-            print(f"❌ Request error fetching job details for {job_id}: {err}")
+            pass
         except Exception as e:
-            print(f"❌ Unexpected error fetching job details for {job_id}: {e}")
+            pass
         
         return None
     
@@ -141,7 +136,6 @@ class JobMatchingService:
             
             # Extract job data
             if not job_details or 'data' not in job_details or not job_details['data']:
-                print("⚠️ No job data available for scoring")
                 return 0
             
             job_data = job_details['data'][0]
@@ -187,15 +181,9 @@ class JobMatchingService:
             # Cap score at 100 and ensure minimum is 0
             final_score = max(0, min(relevance_score, 100))
             
-            print(f"📊 Relevance Score Calculation:")
-            print(f"   Skills Match: {len(matching_skills)}/{len(resume_skills)} = {skill_score:.2f}%")
-            print(f"   Keywords Match: {len(matching_keywords)}/{len(resume_keywords)} = {keyword_score:.2f}%")
-            print(f"   Final Score: {final_score:.2f}%")
-            
             return final_score
             
         except Exception as e:
-            print(f"❌ Error calculating relevance score: {e}")
             return 0
     
     def save_job_to_database(self, job_summary: Dict, job_details: Dict, db: Session) -> Optional[models.Job]:
@@ -219,7 +207,6 @@ class JobMatchingService:
             ).first()
             
             if existing_job:
-                print(f"💾 Job {job_summary.get('job_id')} already exists in database")
                 return existing_job
             
             # Create new job record
@@ -267,11 +254,9 @@ class JobMatchingService:
             db.commit()
             db.refresh(new_job)
             
-            print(f"💾 Successfully saved job {new_job.job_id} to database")
             return new_job
             
         except Exception as e:
-            print(f"❌ Error saving job to database: {e}")
             db.rollback()
             return None
     
@@ -299,7 +284,6 @@ class JobMatchingService:
                 # Update existing match with new score
                 existing_match.relevance_score = relevance_score
                 db.commit()
-                print(f"🔄 Updated existing job match for user {user_id} and job {job.job_id}")
                 return existing_match
             
             # Create new job match
@@ -313,11 +297,9 @@ class JobMatchingService:
             db.commit()
             db.refresh(new_match)
             
-            print(f"💾 Saved job match: User {user_id} <-> Job {job.job_id} (Score: {relevance_score:.2f}%)")
             return new_match
             
         except Exception as e:
-            print(f"❌ Error saving job match: {e}")
             db.rollback()
             return None
     
@@ -337,8 +319,6 @@ class JobMatchingService:
         Returns:
             Dictionary with processing results
         """
-        print(f"\n🚀 STARTING JOB MATCHING PROCESS FOR USER {user_id}")
-        print("=" * 70)
         
         try:
             # Get user profile
@@ -347,7 +327,6 @@ class JobMatchingService:
             ).first()
             
             if not profile:
-                print("❌ User profile not found")
                 return {
                     "success": False,
                     "message": "User profile not found",
@@ -358,7 +337,6 @@ class JobMatchingService:
             
             # Check if user has resume parsed data
             if not profile.resume_parsed or not profile.resume_parsed.get("parsed_data"):
-                print("❌ No parsed resume data found")
                 return {
                     "success": False,
                     "message": "No parsed resume data found. Please upload and parse resume first.",
@@ -369,7 +347,6 @@ class JobMatchingService:
             
             # Check if user has job preferences
             if not profile.query or not profile.location:
-                print("❌ Job preferences incomplete")
                 return {
                     "success": False,
                     "message": "Job preferences not set. Please set job title and location preferences.",
@@ -378,29 +355,10 @@ class JobMatchingService:
                     "matches_created": 0
                 }
             
-            print(f"📋 User Profile Information:")
-            print(f"   User ID: {user_id}")
-            print(f"   Query: {profile.query}")
-            print(f"   Location: {profile.location}")
-            print(f"   Work Experience: {profile.work_experience}")
-            print(f"   Employment Types: {profile.employment_types}")
-            
-            # Extract user skills for logging
-            user_skills = profile.resume_parsed.get("parsed_data", {}).get("skills", [])
-            print(f"   Resume Skills Count: {len(user_skills)}")
-            print(f"   Resume Skills: {', '.join(user_skills[:10])}...")
-            
-            print(f"\n🔍 STEP 1: SEARCHING FOR JOBS")
-            print("-" * 40)
-            
             # Search for jobs based on user preferences
             employment_type = None
             if profile.employment_types and len(profile.employment_types) > 0:
                 employment_type = profile.employment_types[0]  # Use first preference
-            
-            search_query = f"{profile.query} in {profile.location}"
-            print(f"🔍 Search Query: {search_query}")
-            print(f"🔍 Employment Type Filter: {employment_type or 'None'}")
             
             job_search_results = self.search_jobs(
                 query=profile.query,
@@ -409,7 +367,6 @@ class JobMatchingService:
             )
             
             if not job_search_results or not job_search_results.get('data'):
-                print("❌ No jobs found from JSearch API")
                 return {
                     "success": False,
                     "message": "No jobs found for the given preferences",
@@ -419,18 +376,18 @@ class JobMatchingService:
                 }
             
             all_jobs = job_search_results['data']
-            print(f"✅ JSearch API returned {len(all_jobs)} jobs")
+            pass
             
             # Take first 10 jobs for storage
             jobs_to_store = all_jobs[:self.max_jobs_for_storage]
             # Take first 3 jobs for matching
             jobs_to_match = all_jobs[:self.max_jobs_for_matching]
             
-            print(f"� Jobs to store in database: {len(jobs_to_store)}")
-            print(f"📊 Jobs to calculate relevance: {len(jobs_to_match)}")
+            pass
+            pass
             
-            print(f"\n💾 STEP 2: STORING JOBS IN DATABASE")
-            print("-" * 40)
+            pass
+            pass
             
             jobs_stored = 0
             stored_job_objects = []
@@ -439,17 +396,17 @@ class JobMatchingService:
             for i, job_summary in enumerate(jobs_to_store, 1):
                 job_id = job_summary.get('job_id')
                 if not job_id:
-                    print(f"⚠️ Job {i}: Missing job_id, skipping")
+                    pass
                     continue
                 
                 job_title = job_summary.get('job_title', 'Unknown')
                 company = job_summary.get('employer_name', 'Unknown')
-                print(f"💾 Storing Job {i}: {job_title} at {company}")
+                pass
                 
                 # Get detailed job information for storage
                 job_details = self.get_job_details(job_id)
                 if not job_details:
-                    print(f"   ⚠️ Could not fetch details for job {job_id}, storing basic info only")
+                    pass
                     # Create minimal job details for storage
                     job_details = {"data": [job_summary]}
                 
@@ -458,14 +415,14 @@ class JobMatchingService:
                 if saved_job:
                     jobs_stored += 1
                     stored_job_objects.append(saved_job)
-                    print(f"   ✅ Job {i} stored successfully (DB ID: {saved_job.id})")
+                    pass
                 else:
-                    print(f"   ❌ Failed to store job {i}")
+                    pass
             
-            print(f"\n✅ STORED {jobs_stored} JOBS IN DATABASE")
+            pass
             
-            print(f"\n🎯 STEP 3: CALCULATING RELEVANCE SCORES")
-            print("-" * 40)
+            pass
+            pass
             
             matches_created = 0
             
@@ -473,27 +430,27 @@ class JobMatchingService:
             for i, job_summary in enumerate(jobs_to_match, 1):
                 job_id = job_summary.get('job_id')
                 if not job_id:
-                    print(f"⚠️ Match Job {i}: Missing job_id, skipping")
+                    pass
                     continue
                 
                 job_title = job_summary.get('job_title', 'Unknown')
                 company = job_summary.get('employer_name', 'Unknown')
-                print(f"\n🎯 Calculating Relevance for Job {i}: {job_title} at {company}")
+                pass
                 
                 # Get detailed job information for relevance calculation
                 job_details = self.get_job_details(job_id)
                 if not job_details:
-                    print(f"   ❌ Could not fetch details for relevance calculation, skipping")
+                    pass
                     continue
                 
                 # Calculate relevance score
-                print(f"   📊 Calculating relevance score...")
+                pass
                 relevance_score = self.calculate_relevance_score(
                     profile.resume_parsed,
                     job_details
                 )
                 
-                print(f"   🎯 Relevance Score: {relevance_score:.2f}%")
+                pass
                 
                 # Find the stored job object
                 stored_job = None
@@ -503,32 +460,32 @@ class JobMatchingService:
                         break
                 
                 if not stored_job:
-                    print(f"   ⚠️ Could not find stored job object for {job_id}")
+                    pass
                     continue
                 
                 # Save job match
                 job_match = self.save_job_match(user_id, stored_job, relevance_score, db)
                 if job_match:
                     matches_created += 1
-                    print(f"   ✅ Job match created (Match ID: {job_match.id})")
+                    pass
                 else:
-                    print(f"   ❌ Failed to create job match")
+                    pass
             
-            print(f"\n🎉 JOB MATCHING COMPLETED!")
-            print("=" * 70)
-            print(f"📊 FINAL RESULTS:")
-            print(f"   Jobs Found from API: {len(all_jobs)}")
-            print(f"   Jobs Stored in Database: {jobs_stored}")
-            print(f"   Jobs Processed for Relevance: {len(jobs_to_match)}")
-            print(f"   Job Matches Created: {matches_created}")
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
+            pass
             
             # Update last job search timestamp
             try:
                 profile.last_job_search = datetime.utcnow()
                 db.commit()
-                print(f"   ✅ Updated last_job_search timestamp for user {user_id}")
+                pass
             except Exception as e:
-                print(f"   ⚠️ Failed to update last_job_search timestamp: {e}")
+                pass
             
             return {
                 "success": True,
@@ -540,9 +497,6 @@ class JobMatchingService:
             }
             
         except Exception as e:
-            print(f"❌ Error in job matching process: {e}")
-            import traceback
-            traceback.print_exc()
             return {
                 "success": False,
                 "message": f"Error during job matching: {str(e)}",
@@ -561,7 +515,6 @@ def get_job_matching_service() -> Optional[JobMatchingService]:
     """
     api_key = os.getenv("JSEARCH_API_KEY")
     if not api_key:
-        print("❌ JSEARCH_API_KEY environment variable not found")
         return None
     
     return JobMatchingService(api_key)

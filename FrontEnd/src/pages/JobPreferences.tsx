@@ -76,7 +76,7 @@ const JobPreferences = () => {
       })
       .catch((error) => {
         if (error.response?.status === 404) {
-          console.log("No existing profile found, starting fresh");
+          // No existing profile found, starting fresh
         } else if (error.response?.status === 401) {
           console.error("Unauthorized access");
         } else {

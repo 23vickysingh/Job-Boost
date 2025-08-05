@@ -19,7 +19,6 @@ const PersonalInfo = () => {
       .catch((error) => {
         if (error.response?.status === 404) {
           // User doesn't have personal info yet - that's OK, start with empty form
-          console.log("No personal info found, starting with empty form");
         } else if (error.response?.status === 401) {
           // Unauthorized - API interceptor will handle redirect
           console.error("Unauthorized access");

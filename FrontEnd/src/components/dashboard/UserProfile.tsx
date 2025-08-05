@@ -117,16 +117,6 @@ interface UserProfileProps {
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ onEditClick, profile }) => {
-  // Debug logging to see the actual data structure
-  React.useEffect(() => {
-    if (profile) {
-      console.log("Profile data received:", profile);
-      console.log("Resume parsed structure:", profile.resume_parsed);
-      if (profile.resume_parsed?.parsed_data) {
-        console.log("Parsed data found:", profile.resume_parsed.parsed_data);
-      }
-    }
-  }, [profile]);
 
   // Extract resume data - check both direct structure and parsed_data structure
   const resumeData = profile?.resume_parsed?.parsed_data || profile?.resume_parsed;

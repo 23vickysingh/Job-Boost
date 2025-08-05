@@ -24,7 +24,6 @@ class ResumeProcessor:
             return
         
         self.is_running = True
-        print("Resume processor started...")
         
         while self.is_running:
             try:
@@ -36,13 +35,11 @@ class ResumeProcessor:
                 # No task in queue, continue waiting
                 continue
             except Exception as e:
-                print(f"Error in resume processor: {e}")
                 continue
     
     async def stop_processor(self):
         """Stop the background resume processor."""
         self.is_running = False
-        print("Resume processor stopped.")
     
     async def add_resume_to_queue(self, user_id: int, file_bytes: bytes, filename: str):
         """Add a resume processing task to the queue."""
@@ -52,7 +49,6 @@ class ResumeProcessor:
             "filename": filename
         }
         await self.processing_queue.put(task)
-        print(f"Added resume processing task for user {user_id}")
     
     async def _process_resume_task(self, task: dict):
         """Process a single resume parsing task."""
@@ -61,13 +57,10 @@ class ResumeProcessor:
         filename = task["filename"]
         
         try:
-            print(f"Processing resume for user {user_id}: {filename}")
-            
             # Parse the resume
             parsed_result = await process_resume_upload(file_bytes, filename, use_gemini=True)
             
             if not parsed_result.get("success"):
-                print(f"Failed to parse resume for user {user_id}: {parsed_result.get('error')}")
                 return
             
             # Format data for database
@@ -76,10 +69,8 @@ class ResumeProcessor:
             # Update database
             await self._update_user_profile(user_id, db_data, filename)
             
-            print(f"Successfully processed resume for user {user_id}")
-            
         except Exception as e:
-            print(f"Error processing resume for user {user_id}: {e}")
+            pass
     
     async def _update_user_profile(self, user_id: int, profile_data: dict, filename: str):
         """Update user profile with parsed resume data."""
@@ -106,11 +97,9 @@ class ResumeProcessor:
             profile.resume_data = profile_data.get("resume_data", "")
             
             db.commit()
-            print(f"Updated profile for user {user_id}")
             
         except SQLAlchemyError as e:
             db.rollback()
-            print(f"Database error updating profile for user {user_id}: {e}")
             raise
         finally:
             db.close()
@@ -122,28 +111,20 @@ resume_processor = ResumeProcessor()
 
 async def start_background_tasks():
     """Start all background tasks."""
-    print("🚀 Starting background tasks...")
-    
     # Start resume processor
     asyncio.create_task(resume_processor.start_processor())
-    print("   ✅ Resume processor started")
     
     # Start job scheduler
     asyncio.create_task(job_scheduler.start_scheduler())
-    print("   ✅ Job scheduler started (12-hour intervals)")
 
 
 async def stop_background_tasks():
     """Stop all background tasks."""
-    print("🛑 Stopping background tasks...")
-    
     # Stop resume processor
     await resume_processor.stop_processor()
-    print("   ✅ Resume processor stopped")
     
     # Stop job scheduler
     await job_scheduler.stop_scheduler()
-    print("   ✅ Job scheduler stopped")
 
 
 def get_resume_processor() -> ResumeProcessor:
