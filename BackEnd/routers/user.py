@@ -42,7 +42,7 @@ def send_otp_email(to_email: str, otp: str) -> bool:
 router = APIRouter(prefix="/user", tags=["User"])
 
 
-@router.post("/register", response_model=schemas.UserOut)
+@router.post("/register", response_model=schemas.UserResponse)
 def register_user(request: schemas.UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(models.User).filter(models.User.user_id == request.user_id).first()
     if existing_user:
@@ -77,7 +77,7 @@ def request_registration(request: schemas.RegistrationRequest, db: Session = Dep
     return {"message": "OTP sent"}
 
 
-@router.post("/confirm-registration", response_model=schemas.UserOut)
+@router.post("/confirm-registration", response_model=schemas.UserResponse)
 def confirm_registration(request: schemas.RegistrationVerify, db: Session = Depends(get_db)):
     key = f"reg:{request.user_id}"
     data = redis_client.hgetall(key)

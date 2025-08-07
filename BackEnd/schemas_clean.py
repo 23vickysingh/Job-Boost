@@ -58,25 +58,6 @@ class UserCreate(UserBase):
     password: str
 
 
-class RegistrationRequest(UserBase):
-    password: str
-
-
-class RegistrationVerify(BaseModel):
-    user_id: EmailStr
-    otp: str
-
-
-class PasswordResetRequest(BaseModel):
-    user_id: EmailStr
-
-
-class PasswordUpdate(BaseModel):
-    user_id: EmailStr
-    otp: str
-    new_password: str
-
-
 class UserResponse(UserBase):
     id: int
     created_at: datetime
