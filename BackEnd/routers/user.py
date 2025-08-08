@@ -8,7 +8,7 @@ import models, schemas
 from database import get_db
 from auth.hashing import Hash
 from auth.tokens import create_access_token
-from redis_client import redis_client
+from services.otp_service import OTPService
 import os
 import requests
 
@@ -40,6 +40,7 @@ def send_otp_email(to_email: str, otp: str) -> bool:
 
 
 router = APIRouter(prefix="/user", tags=["User"])
+otp_service = OTPService()
 
 
 @router.post("/register", response_model=schemas.UserResponse)
@@ -65,34 +66,42 @@ def request_registration(request: schemas.RegistrationRequest, db: Session = Dep
     if db.query(models.User).filter(models.User.user_id == request.user_id).first():
         raise HTTPException(status_code=400, detail="User ID already registered")
 
-    otp = f"{random.randint(100000, 999999)}"
-    hashed = Hash.bcrypt(request.password)
-    key = f"reg:{request.user_id}"
-    redis_client.hset(key, mapping={"otp": otp, "password": hashed})
-    redis_client.expire(key, timedelta(minutes=1))
-    print("your otp for current session is " , otp)
+    otp = otp_service.generate_otp()
+    
+    # Store registration data with OTP
+    registration_data = {
+        "password": Hash.bcrypt(request.password)
+    }
+    
+    otp_service.store_otp(request.user_id, otp, "registration", ttl_minutes=10, 
+                         additional_data=registration_data)
+    
+    print("your otp for current session is", otp)
     if not send_otp_email(request.user_id, otp):
-        redis_client.delete(key)
+        otp_service.delete_otp(request.user_id, "registration")
         raise HTTPException(status_code=400, detail="Invalid email id")
     return {"message": "OTP sent"}
 
 
 @router.post("/confirm-registration", response_model=schemas.UserResponse)
 def confirm_registration(request: schemas.RegistrationVerify, db: Session = Depends(get_db)):
-    key = f"reg:{request.user_id}"
-    data = redis_client.hgetall(key)
-    if not data or data.get("otp") != request.otp:
-        raise HTTPException(status_code=400, detail="Invalid OTP")
+    # Verify OTP and get stored data
+    stored_data = otp_service.verify_otp(request.user_id, request.otp, "registration")
+    if not stored_data:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
     if db.query(models.User).filter(models.User.user_id == request.user_id).first():
-        redis_client.delete(key)
         raise HTTPException(status_code=400, detail="User ID already registered")
 
-    new_user = models.User(user_id=request.user_id, password=data.get("password"))
+    # Get password from stored data
+    password = stored_data.get("password")
+    if not password:
+        raise HTTPException(status_code=400, detail="Registration data not found")
+
+    new_user = models.User(user_id=request.user_id, password=password)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    redis_client.delete(key)
 
     profile = models.UserProfile(user_id=new_user.id)
     db.add(profile)
@@ -116,26 +125,23 @@ def request_password_reset(request: schemas.PasswordResetRequest, db: Session = 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    otp = f"{random.randint(100000, 999999)}"
-    key = f"reset:{user.id}"
-    redis_client.setex(key, timedelta(minutes=10), otp)
-
-    send_otp_email(request.user_id, otp)
+    otp = otp_service.generate_otp()
+    otp_service.store_otp(request.user_id, otp, "password_reset", ttl_minutes=10)
+    print("your otp to reset password is ", otp)
+    # send_otp_email(request.user_id, otp)
     return {"message": "OTP sent"}
 
 
 @router.post("/verify-otp")
-def verify_otp(request: schemas.OTPVerify, db: Session = Depends(get_db)):
+def verify_otp(request: schemas.RegistrationVerify, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.user_id == request.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    key = f"reset:{user.id}"
-    otp = redis_client.get(key)
-    if not otp or otp != request.otp:
-        raise HTTPException(status_code=400, detail="Invalid OTP")
+    # Check if OTP is valid without consuming it
+    if not otp_service.is_otp_valid(request.user_id, request.otp, "password_reset"):
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
-    redis_client.setex(f"reset_verified:{user.id}", timedelta(minutes=10), "1")
     return {"message": "OTP verified"}
 
 
@@ -145,14 +151,12 @@ def reset_password(request: schemas.PasswordUpdate, db: Session = Depends(get_db
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    key = f"reset:{user.id}"
-    otp = redis_client.get(key)
-    verified = redis_client.get(f"reset_verified:{user.id}")
-    if not otp or otp != request.otp or not verified:
-        raise HTTPException(status_code=400, detail="Invalid OTP")
+    # Verify and consume OTP
+    stored_data = otp_service.verify_otp(request.user_id, request.otp, "password_reset")
+    if not stored_data:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
     user.password = Hash.bcrypt(request.password)
     db.commit()
-    redis_client.delete(key)
-    redis_client.delete(f"reset_verified:{user.id}")
+    
     return {"message": "Password updated"}

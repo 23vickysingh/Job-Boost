@@ -74,7 +74,7 @@ class PasswordResetRequest(BaseModel):
 class PasswordUpdate(BaseModel):
     user_id: EmailStr
     otp: str
-    new_password: str
+    password: str
 
 
 class UserResponse(UserBase):
@@ -88,24 +88,6 @@ class UserResponse(UserBase):
 class UserLogin(BaseModel):
     user_id: EmailStr
     password: str
-
-
-# ---------------- OTP Schemas ----------------
-class OTPRequest(BaseModel):
-    email: EmailStr
-    purpose: str  # 'registration' or 'password_reset'
-
-
-class OTPVerify(BaseModel):
-    email: EmailStr
-    otp_code: str
-    purpose: str
-
-
-class PasswordReset(BaseModel):
-    email: EmailStr
-    otp_code: str
-    new_password: str
 
 
 # ---------------- Token Schemas ----------------

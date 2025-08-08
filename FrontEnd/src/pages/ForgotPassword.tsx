@@ -42,11 +42,11 @@ const ForgotPassword = () => {
       toast.error('Passwords do not match');
       return;
     }
-    const valid = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
-    if (!valid.test(password)) {
-      toast.error('Password must be 8+ chars with letters, numbers and symbol');
-      return;
-    }
+    // const valid = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+    // if (!valid.test(password)) {
+    //   toast.error('Password must be 8+ chars with letters, numbers and symbol');
+    //   return;
+    // }
     try {
       await resetPassword(email, otp, password);
       toast.success('Password updated');

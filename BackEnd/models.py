@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON, Boolean
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -34,15 +34,3 @@ class UserProfile(Base):
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="profile")
-
-
-class OTPVerification(Base):
-    __tablename__ = "otp_verification"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), index=True)
-    otp_code = Column(String(10))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime)
-    is_used = Column(Boolean, default=False)
-    purpose = Column(String(50))  # 'registration', 'password_reset'
