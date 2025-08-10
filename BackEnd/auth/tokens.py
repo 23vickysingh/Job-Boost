@@ -1,8 +1,13 @@
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Secret key for JWT — keep it safe!
-SECRET_KEY = "your_jwt_secret_key"  # Use env variable in production
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

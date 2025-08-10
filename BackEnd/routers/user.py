@@ -43,24 +43,6 @@ router = APIRouter(prefix="/user", tags=["User"])
 otp_service = OTPService()
 
 
-@router.post("/register", response_model=schemas.UserResponse)
-def register_user(request: schemas.UserCreate, db: Session = Depends(get_db)):
-    existing_user = db.query(models.User).filter(models.User.user_id == request.user_id).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="User ID already registered")
-
-    hashed_password = Hash.bcrypt(request.password)
-    new_user = models.User(user_id=request.user_id, password=hashed_password)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    profile = models.UserProfile(user_id=new_user.id)
-    db.add(profile)
-    db.commit()
-    return new_user
-
-
 @router.post("/request-registration")
 def request_registration(request: schemas.RegistrationRequest, db: Session = Depends(get_db)):
     if db.query(models.User).filter(models.User.user_id == request.user_id).first():

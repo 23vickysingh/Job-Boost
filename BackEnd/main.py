@@ -1,9 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
 from routers import user, profile
 from database import Base, engine
 
+# Load environment variables from .env file
+load_dotenv()
 
 # Create all tables
 Base.metadata.create_all(bind=engine)

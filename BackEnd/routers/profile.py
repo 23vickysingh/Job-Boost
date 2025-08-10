@@ -12,6 +12,24 @@ from auth.dependencies import get_current_user
 router = APIRouter(prefix="/profile", tags=["Profile"])
 
 
+def _get_or_create_profile(db: Session, user: models.User) -> models.UserProfile:
+    """
+    Retrieves a user's profile from the database. If a profile does not exist,
+    it creates a new one.
+    """
+    profile = (
+        db.query(models.UserProfile).filter(models.UserProfile.user_id == user.id).first()
+    )
+
+    if not profile:
+        profile = models.UserProfile(user_id=user.id)
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+
+    return profile
+
+
 @router.post("/job-preferences", response_model=schemas.UserProfileOut)
 async def create_job_preferences(
     preferences: schemas.JobPreferencesCreate,
@@ -20,43 +38,21 @@ async def create_job_preferences(
 ):
     """Create or update user job preferences."""
     
-    # Check if profile exists
-    existing_profile = db.query(models.UserProfile).filter(
-        models.UserProfile.user_id == current_user.id
-    ).first()
+    profile = _get_or_create_profile(db, current_user)
+
+    # Update profile with new preferences
+    profile.query = preferences.query
+    profile.location = preferences.location
+    profile.mode_of_job = preferences.mode_of_job
+    profile.work_experience = preferences.work_experience
+    profile.employment_types = preferences.employment_types
+    profile.company_types = preferences.company_types
+    profile.job_requirements = preferences.job_requirements
+    profile.last_updated = datetime.utcnow()
     
-    if existing_profile:
-        # Update existing profile
-        existing_profile.query = preferences.query
-        existing_profile.location = preferences.location
-        existing_profile.mode_of_job = preferences.mode_of_job
-        existing_profile.work_experience = preferences.work_experience
-        existing_profile.employment_types = preferences.employment_types
-        existing_profile.company_types = preferences.company_types
-        existing_profile.job_requirements = preferences.job_requirements
-        existing_profile.last_updated = datetime.utcnow()
-        
-        db.commit()
-        db.refresh(existing_profile)
-        return existing_profile
-    else:
-        # Create new profile
-        new_profile = models.UserProfile(
-            user_id=current_user.id,
-            query=preferences.query,
-            location=preferences.location,
-            mode_of_job=preferences.mode_of_job,
-            work_experience=preferences.work_experience,
-            employment_types=preferences.employment_types,
-            company_types=preferences.company_types,
-            job_requirements=preferences.job_requirements
-        )
-        
-        db.add(new_profile)
-        db.commit()
-        db.refresh(new_profile)
-        
-        return new_profile
+    db.commit()
+    db.refresh(profile)
+    return profile
 
 
 @router.post("/upload-resume", response_model=schemas.ResumeUploadResponse)
@@ -106,13 +102,7 @@ async def upload_resume(
         )
     
     # Update or create user profile
-    profile = db.query(models.UserProfile).filter(
-        models.UserProfile.user_id == current_user.id
-    ).first()
-    
-    if not profile:
-        profile = models.UserProfile(user_id=current_user.id)
-        db.add(profile)
+    profile = _get_or_create_profile(db, current_user)
     
     profile.resume_location = file_path
     profile.resume_text = resume_text
@@ -134,30 +124,7 @@ async def get_profile(
     current_user: models.User = Depends(get_current_user),
 ):
     """Get user profile."""
-    profile = db.query(models.UserProfile).filter(
-        models.UserProfile.user_id == current_user.id
-    ).first()
-    
-    if not profile:
-        # Create empty profile if it doesn't exist
-        profile = models.UserProfile(
-            user_id=current_user.id,
-            query=None,
-            location=None,
-            mode_of_job=None,
-            work_experience=None,
-            employment_types=None,
-            company_types=None,
-            job_requirements=None,
-            resume_location=None,
-            resume_text=None,
-            resume_parsed=None
-        )
-        db.add(profile)
-        db.commit()
-        db.refresh(profile)
-    
-    return profile
+    return _get_or_create_profile(db, current_user)
 
 
 @router.get("/resume-status")
@@ -225,28 +192,7 @@ async def get_complete_profile(
 ):
     """Get complete user profile including user details."""
     
-    profile = db.query(models.UserProfile).filter(
-        models.UserProfile.user_id == current_user.id
-    ).first()
-    
-    if not profile:
-        # Create empty profile if it doesn't exist
-        profile = models.UserProfile(
-            user_id=current_user.id,
-            query=None,
-            location=None,
-            mode_of_job=None,
-            work_experience=None,
-            employment_types=None,
-            company_types=None,
-            job_requirements=None,
-            resume_location=None,
-            resume_text=None,
-            resume_parsed=None
-        )
-        db.add(profile)
-        db.commit()
-        db.refresh(profile)
+    profile = _get_or_create_profile(db, current_user)
     
     # Create complete profile response
     complete_profile = {
