@@ -11,7 +11,7 @@ from auth.tokens import verify_access_token
 # ensure FastAPI generates the correct OpenAPI docs and token retrieval works.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/login")
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
