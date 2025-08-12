@@ -1,0 +1,28 @@
+# Start with an official Python image
+FROM python:3.11-slim
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the requirements file first to leverage Docker's caching
+COPY requirements.txt .
+
+# Install the Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the backend application code into the container
+COPY . .
+
+# Create a non-root user and group
+RUN addgroup -S appgroup && adduser -S -G appgroup appuser
+
+# Change ownership of the app directory
+RUN chown -R appuser:appgroup /app
+
+# Switch to the non-root user
+USER appuser
+
+# No port needs to be exposed for the worker service
+
+# Command to run the Celery worker when the container starts
+CMD ["celery", "-A", "tasks.celery_app.app", "worker", "--loglevel=info"]

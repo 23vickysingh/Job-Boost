@@ -1,12 +1,19 @@
+version: '3.8'
 
 services:
   # Backend Service (FastAPI)
   app:
-    build: ./BackEnd
+    build:
+      context: ./BackEnd
+      dockerfile: Dockerfile # All backend services use this Dockerfile
+    container_name: job-boost-app
     ports:
       - "8000:8000"
     env_file:
       - ./.env
+    working_dir: /app 
+    environment:
+      - PYTHONPATH=/app
     volumes:
       - ./BackEnd:/app
       - ./uploads:/app/uploads
@@ -16,38 +23,47 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      # elasticsearch:
-      #   condition: service_healthy
 
   # The Celery worker service
   worker:
-    build: .
+    build:
+      context: ./BackEnd
+      dockerfile: Dockerfile # Use the same Dockerfile as the 'app' service
     container_name: job-boost-worker
-    command: celery -A celery_app.app worker --loglevel=info
+    command: celery -A tasks.celery_app.app worker --loglevel=info
+    working_dir: /app 
+    environment:
+      - PYTHONPATH=/app
     volumes:
-      - .:/app
+      - ./BackEnd:/app
     env_file:
       - ./.env
     depends_on:
       - redis
-      - app
+      - postgres
 
   # The Celery beat scheduler service
   beat:
-    build: .
+    build:
+      context: ./BackEnd
+      dockerfile: Dockerfile # Use the same Dockerfile as the 'app' service
     container_name: job-boost-beat
-    command: celery -A celery_app.app beat --loglevel=info -s /app/celerybeat-schedule
+    command: celery -A tasks.celery_app.app beat --loglevel=info -s /app/celery_data/celerybeat-schedule
+    working_dir: /app 
+    environment:
+      - PYTHONPATH=/app
     volumes:
-      - .:/app
+      - ./BackEnd:/app
+      - celery_data:/app/celery_data # FIX: Mount a named volume for persistent data
     env_file:
       - ./.env
     depends_on:
       - redis
-      - app
+      - postgres
 
   # Frontend Service (React + Vite Dev Server)
   frontend:
-    build: 
+    build:
       context: ./FrontEnd
       dockerfile: Dockerfile.dev
     ports:
@@ -76,26 +92,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Elasticsearch Service - DISABLED FOR NOW
-  # elasticsearch:
-  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-  #   restart: always
-  #   environment:
-  #     - discovery.type=single-node
-  #     - xpack.security.enabled=false
-  #     - xpack.security.enrollment.enabled=false
-  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-  #   ports:
-  #     - "9200:9200"
-  #     - "9300:9300"
-  #   volumes:
-  #     - elasticsearch_data:/usr/share/elasticsearch/data
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
-
   # Redis Service
   redis:
     image: redis:7-alpine
@@ -107,5 +103,5 @@ services:
 
 volumes:
   postgres_data:
-  # elasticsearch_data:  # DISABLED - Elasticsearch not in use
   redis_data:
+  celery_data: {} # FIX: Define the named volume for Celery Beat
