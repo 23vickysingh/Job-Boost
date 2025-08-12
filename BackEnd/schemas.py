@@ -161,3 +161,51 @@ class APIResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str
+
+
+# ---------------- Job Schemas ----------------
+class JobBase(BaseModel):
+    job_id: str
+    employer_name: Optional[str] = None
+    job_title: Optional[str] = None
+    job_description: Optional[str] = None
+    job_apply_link: Optional[str] = None
+    job_city: Optional[str] = None
+    job_country: Optional[str] = None
+    job_employment_type: Optional[str] = None
+    employer_logo: Optional[str] = None
+    job_is_remote: Optional[bool] = False
+    job_posted_at_datetime_utc: Optional[str] = None
+    job_required_skills: Optional[List[str]] = None
+    job_min_salary: Optional[float] = None
+    job_max_salary: Optional[float] = None
+    job_salary_currency: Optional[str] = None
+    job_salary_period: Optional[str] = None
+    job_api_response: Optional[Dict[str, Any]] = None
+
+class JobCreate(JobBase):
+    pass
+
+class JobOut(JobBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
+# ---------------- Job Match Schemas ----------------
+class JobMatchBase(BaseModel):
+    user_id: int
+    job_id: int
+    relevance_score: float
+
+class JobMatchCreate(JobMatchBase):
+    pass
+
+class JobMatchOut(JobMatchBase):
+    id: int
+    created_at: datetime
+    job: JobOut  # Nest the full job details in the response
+
+    class Config:
+        from_attributes = True

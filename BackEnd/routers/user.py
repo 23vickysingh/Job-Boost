@@ -9,38 +9,12 @@ from database import get_db
 from auth.hashing import Hash
 from auth.tokens import create_access_token
 from services.otp_service import OTPService
+from services.email_service import EmailService
 import os
-import requests
-
-
-def send_otp_email(to_email: str, otp: str) -> bool:
-    """Send OTP via Brevo. Returns True on success."""
-    api_key = os.getenv("BREVO_API_KEY")
-    if not api_key:
-        print(api_key)
-        print("Brevo API key not configured")
-        return False
-
-    payload = {
-        "sender": {"name": "JobBoost", "email": "no-reply@jobboost.com"},
-        "to": [{"email": to_email}],
-        "subject": "Your JobBoost OTP",
-        "htmlContent": f"<p>Your verification code is <strong>{otp}</strong></p>",
-    }
-    headers = {"api-key": api_key, "Content-Type": "application/json"}
-    try:
-        response = requests.post(
-            "https://api.brevo.com/v3/smtp/email", json=payload, headers=headers
-        )
-        response.raise_for_status()
-        return True
-    except requests.RequestException as e:
-        print("Brevo send failed", e)
-        return False
-
 
 router = APIRouter(prefix="/user", tags=["User"])
 otp_service = OTPService()
+email_service = EmailService()
 
 
 @router.post("/request-registration")
@@ -59,7 +33,7 @@ def request_registration(request: schemas.RegistrationRequest, db: Session = Dep
                          additional_data=registration_data)
     
     print("your otp for current session is", otp)
-    if not send_otp_email(request.user_id, otp):
+    if not email_service.send_otp(request.user_id, otp):
         otp_service.delete_otp(request.user_id, "registration")
         raise HTTPException(status_code=400, detail="Invalid email id")
     return {"message": "OTP sent"}
@@ -110,7 +84,7 @@ def request_password_reset(request: schemas.PasswordResetRequest, db: Session = 
     otp = otp_service.generate_otp()
     otp_service.store_otp(request.user_id, otp, "password_reset", ttl_minutes=10)
     print("your otp to reset password is ", otp)
-    # send_otp_email(request.user_id, otp)
+    # email_service.send_otp(request.user_id, otp)
     return {"message": "OTP sent"}
 
 

@@ -17,4 +17,5 @@ python-dotenv
 PyMuPDF
 python-docx
 asyncio
+celery[redis]
 # elasticsearch==8.11.0  # DISABLED - Elasticsearch not in use

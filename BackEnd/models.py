@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON, Boolean, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -14,6 +14,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     profile = relationship("UserProfile", back_populates="user", uselist=False)
+    job_matches = relationship("JobMatch", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserProfile(Base):
@@ -34,3 +35,51 @@ class UserProfile(Base):
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="profile")
+
+
+class Job(Base):
+    __tablename__ = "jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Essential Fields from JSearch API
+    job_id = Column(String(255), unique=True, nullable=False, index=True)
+    employer_name = Column(String(255), index=True)
+    job_title = Column(String(255), index=True)
+    job_description = Column(Text, nullable=False)
+    job_apply_link = Column(String(1024), nullable=True)
+    job_city = Column(String(255), nullable=True)
+    job_country = Column(String(5), nullable=True)
+    job_employment_type = Column(String(255), nullable=True)
+    
+    # Important Optional Fields
+    employer_logo = Column(String(1024), nullable=True)
+    job_is_remote = Column(Boolean, default=False)
+    job_posted_at_datetime_utc = Column(String(255), nullable=True)
+    job_required_skills = Column(JSON, nullable=True)
+    
+    # Salary Information
+    job_min_salary = Column(Float, nullable=True)
+    job_max_salary = Column(Float, nullable=True)
+    job_salary_currency = Column(String(10), nullable=True)
+    job_salary_period = Column(String(50), nullable=True)
+
+    # Store the full, raw API response for future use or debugging
+    job_api_response = Column(JSON, nullable=True)
+    
+    # New relationship to JobMatch
+    matches = relationship("JobMatch", back_populates="job", cascade="all, delete-orphan")
+
+
+class JobMatch(Base):
+    __tablename__ = "job_matches"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
+    relevance_score = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships to easily access User and Job objects
+    user = relationship("User", back_populates="job_matches")
+    job = relationship("Job", back_populates="matches")
