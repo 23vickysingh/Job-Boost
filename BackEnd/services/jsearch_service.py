@@ -2,6 +2,7 @@ import os
 import requests
 from typing import List, Dict, Any
 from dotenv import load_dotenv
+from urllib.parse import urlencode
 
 import models
 
@@ -44,7 +45,24 @@ def fetch_jobs_from_api(user_profile: models.UserProfile) -> List[Dict[str, Any]
     
     # Add employment types if they exist, formatted as a comma-separated string
     if user_profile.employment_types:
-        params["employment_types"] = ",".join(user_profile.employment_types).upper()
+        # Ensure employment_types are valid JSearch API values
+        valid_employment_types = ["FULLTIME", "CONTRACTOR", "PARTTIME", "INTERN"]
+        formatted_types = []
+        
+        for emp_type in user_profile.employment_types:
+            # Convert common variations to JSearch API format
+            emp_type_upper = emp_type.upper().replace("-", "").replace("_", "")
+            if emp_type_upper == "FULLTIME" or emp_type_upper == "FULL-TIME" or emp_type_upper == "FULL_TIME":
+                formatted_types.append("FULLTIME")
+            elif emp_type_upper == "PARTTIME" or emp_type_upper == "PART-TIME" or emp_type_upper == "PART_TIME":
+                formatted_types.append("PARTTIME")
+            elif emp_type_upper == "CONTRACTOR":
+                formatted_types.append("CONTRACTOR")
+            elif emp_type_upper == "INTERN" or emp_type_upper == "INTERNSHIP":
+                formatted_types.append("INTERN")
+                
+        if formatted_types:
+            params["employment_types"] = ",".join(formatted_types)
 
     # Set the required headers for the RapidAPI endpoint
     headers = {
@@ -70,6 +88,8 @@ def fetch_jobs_from_api(user_profile: models.UserProfile) -> List[Dict[str, Any]
 
     except requests.exceptions.RequestException as e:
         print(f"ERROR: Failed to connect to JSearch API. {e}")
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"Response content: {e.response.text}")
         raise JSearchAPIError(f"An error occurred while contacting the JSearch API: {e}")
     except KeyError:
         print(f"ERROR: Unexpected API response format. 'data' key not found.")

@@ -6,6 +6,7 @@ from datetime import datetime
 
 import models, schemas
 from utils.resume_parser import extract_text_from_upload, parse_resume_with_gemini
+from tasks.job_search import find_and_match_jobs_for_user
 from database import get_db
 from auth.dependencies import get_current_user
 
@@ -52,6 +53,9 @@ async def create_job_preferences(
     
     db.commit()
     db.refresh(profile)
+
+    find_and_match_jobs_for_user.delay(current_user.id)
+
     return profile
 
 
