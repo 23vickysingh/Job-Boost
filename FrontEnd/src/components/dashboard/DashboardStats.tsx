@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ArrowUpRight, Search, Target, FileText, User } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchJobMatchStats } from "@/lib/api";
 
 // Interface for profile data
 interface Profile {
@@ -32,6 +34,12 @@ interface DashboardStatsProps {
 }
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({ profile }) => {
+  // Fetch job match statistics
+  const { data: jobStats, isLoading: statsLoading } = useQuery({
+    queryKey: ["jobStats"],
+    queryFn: fetchJobMatchStats,
+  });
+
   // Calculate profile strength based on available data
   const calculateProfileStrength = (): number => {
     if (!profile) return 0;
@@ -60,9 +68,12 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ profile }) => {
 
   const profileStrength = calculateProfileStrength();
   
-  // Mock data for other metrics - would come from API in real app
-  const mockJobsFetched = 0;
-  const mockHighRelevanceJobs = 0;
+  // Get job statistics from API or use defaults
+  const totalMatches = jobStats?.data?.total_matches || 0;
+  const highRelevanceJobs = jobStats?.data?.high_relevance_jobs || 0;
+  const recentMatches = jobStats?.data?.recent_matches || 0;
+  
+  // Mock data for applications - would come from API in real app
   const mockApplications = 0;
 
   return (
@@ -72,13 +83,19 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ profile }) => {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
             <Search className="mr-2 h-4 w-4" />
-            Jobs Fetched
+            Jobs Matched
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{mockJobsFetched}</div>
+          <div className="text-2xl font-bold">
+            {statsLoading ? (
+              <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+            ) : (
+              totalMatches
+            )}
+          </div>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            <span className="text-blue-500 dark:text-blue-400">0</span> new jobs today
+            <span className="text-blue-500 dark:text-blue-400">{recentMatches}</span> new matches today
           </p>
         </CardContent>
       </Card>
@@ -88,13 +105,19 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ profile }) => {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
             <Target className="mr-2 h-4 w-4" />
-            Jobs with High Relevance
+            High Relevance Jobs
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{mockHighRelevanceJobs}</div>
+          <div className="text-2xl font-bold">
+            {statsLoading ? (
+              <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+            ) : (
+              highRelevanceJobs
+            )}
+          </div>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            High match with your profile
+            80%+ match with your profile
           </p>
         </CardContent>
       </Card>

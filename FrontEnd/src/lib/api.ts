@@ -80,3 +80,11 @@ export const verifyOtp = (email: string, otp: string) =>
 
 export const resetPassword = (email: string, otp: string, password: string) =>
   api.post("/user/reset-password", { user_id: email, otp, password });
+
+// Job Matches API
+export const fetchJobMatches = (params?: { limit?: number; offset?: number; min_relevance?: number }) =>
+  api.get("/jobs/matches", { params });
+
+export const fetchJobMatchStats = () => api.get("/jobs/matches/stats");
+
+export const fetchJobMatch = (matchId: number) => api.get(`/jobs/matches/${matchId}`);

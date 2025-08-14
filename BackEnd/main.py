@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import tasks.job_search as job_search_tasks
 from database import get_db
 
-from routers import user, profile
+from routers import user, profile, jobs
 from database import Base, engine
 
 # Load environment variables from .env file
@@ -39,6 +39,7 @@ app.add_middleware(
 # Include routers
 app.include_router(user.router)
 app.include_router(profile.router)
+app.include_router(jobs.router)
 
 
 @app.get("/")
