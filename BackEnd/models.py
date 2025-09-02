@@ -1,8 +1,14 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON, Boolean, Float
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON, Boolean, Float, Enum
 from sqlalchemy.orm import relationship
 from datetime import datetime
+import enum
 
 from database import Base
+
+
+class ContactStatus(enum.Enum):
+    pending = "pending"
+    resolved = "resolved"
 
 
 class User(Base):
@@ -83,3 +89,17 @@ class JobMatch(Base):
     # Relationships to easily access User and Job objects
     user = relationship("User", back_populates="job_matches")
     job = relationship("Job", back_populates="matches")
+
+
+class Contact(Base):
+    __tablename__ = "contacts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False, index=True)
+    subject = Column(String(500), nullable=False)
+    message = Column(Text, nullable=False)
+    contact_type = Column(String(50), nullable=False)  # feedback, query, support
+    status = Column(Enum(ContactStatus), default=ContactStatus.pending, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    resolved_at = Column(DateTime, nullable=True)

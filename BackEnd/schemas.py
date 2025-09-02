@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+from models import JobMatchStatus
 
 
 # ---------------- Resume Data Schemas ----------------
@@ -198,6 +199,7 @@ class JobMatchBase(BaseModel):
     user_id: int
     job_id: int
     relevance_score: float
+    status: Optional[JobMatchStatus] = JobMatchStatus.not_applied
 
 class JobMatchCreate(JobMatchBase):
     pass
@@ -206,6 +208,29 @@ class JobMatchOut(JobMatchBase):
     id: int
     created_at: datetime
     job: JobOut  # Nest the full job details in the response
+
+    class Config:
+        from_attributes = True
+
+
+# ---------------- Contact Schemas ----------------
+class ContactBase(BaseModel):
+    name: str
+    email: EmailStr
+    subject: str
+    message: str
+    contact_type: str  # feedback, query, support
+
+
+class ContactCreate(ContactBase):
+    pass
+
+
+class ContactOut(ContactBase):
+    id: int
+    status: str
+    created_at: datetime
+    resolved_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
