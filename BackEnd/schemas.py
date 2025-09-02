@@ -1,7 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from models import JobMatchStatus
 
 
 # ---------------- Resume Data Schemas ----------------
@@ -199,7 +198,6 @@ class JobMatchBase(BaseModel):
     user_id: int
     job_id: int
     relevance_score: float
-    status: Optional[JobMatchStatus] = JobMatchStatus.not_applied
 
 class JobMatchCreate(JobMatchBase):
     pass

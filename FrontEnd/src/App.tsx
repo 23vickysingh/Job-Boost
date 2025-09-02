@@ -18,7 +18,7 @@ import UpdatePersonalInfo from "./pages/UpdatePersonalInfo";
 import UpdateJobPreferences from "./pages/UpdateJobPreferences";
 import NotFound from "./pages/NotFound";
 import FAQ from "./pages/FAQ";
-import Pricing from "./pages/Pricing";
+import Contact from "./pages/Contact";
 import PageLoader from "@/components/PageLoader";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
@@ -28,6 +28,9 @@ const RouteChangeLoader: React.FC<{ children: React.ReactNode }> = ({ children }
   const firstLoadRef = React.useRef(true);
 
   React.useEffect(() => {
+    // Scroll to top on route change
+    window.scrollTo(0, 0);
+    
     if (firstLoadRef.current) {
       firstLoadRef.current = false;
       return;
@@ -64,7 +67,7 @@ const App = () => {
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/faq" element={<FAQ />} />
-                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/contact" element={<Contact />} />
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Dashboard />

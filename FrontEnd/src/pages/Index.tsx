@@ -6,8 +6,11 @@ import { ArrowRight, Upload, Search, UserCheck, PieChart, CheckCircle, Briefcase
 import Navbar from "@/components/Navbar";
 import FeatureCard from "@/components/FeatureCard";
 import TestimonialCard from "@/components/TestimonialCard";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
+  const { token } = useAuth();
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -27,7 +30,7 @@ const Index = () => {
                 Upload your resume, and let our AI assistant automatically find and apply to the perfect jobs for you. Save time and increase your chances of landing your dream job.
               </p>
               <div className="mt-8 flex flex-wrap gap-4 animate-fade-up" style={{ animationDelay: "0.5s" }}>
-                <Link to="/signup">
+                <Link to={token ? "/dashboard" : "/signin"}>
                   <Button className="btn-gradient text-lg px-8 py-6">
                     Get Started
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -143,9 +146,9 @@ const Index = () => {
             Join thousands of job seekers who have streamlined their job hunt process and found their dream jobs faster.
           </p>
           <div className="mt-10">
-            <Link to="/signup">
+            <Link to={token ? "/dashboard" : "/signup"}>
               <Button className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-6">
-                Get Started for Free
+                {token ? "Check out the jobs for you" : "Get Started for Free"}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
@@ -175,21 +178,6 @@ const Index = () => {
                     </Link>
                   </li>
                   <li>
-                    <Link to="/features" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
-                      Features
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/pricing" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
-                      Pricing
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-              <div className="text-center md:text-left">
-                <h3 className="font-medium text-gray-900 dark:text-white">Support</h3>
-                <ul className="mt-2 space-y-2">
-                  <li>
                     <Link to="/faq" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                       FAQ
                     </Link>
@@ -197,11 +185,6 @@ const Index = () => {
                   <li>
                     <Link to="/contact" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                       Contact
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/privacy" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
-                      Privacy
                     </Link>
                   </li>
                 </ul>

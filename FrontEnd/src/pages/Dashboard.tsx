@@ -17,9 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Briefcase, 
   FileText, 
-  Settings, 
-  Bookmark, 
-  BarChart,
+  Settings
 } from "lucide-react";
 import Navbar from '@/components/Navbar';
 import UserProfile from '@/components/dashboard/UserProfile';
@@ -28,8 +26,8 @@ import Internships from '@/components/dashboard/Internships';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import JobMatchesList from '@/components/dashboard/JobMatchesList';
 import ApplicationsList from '@/components/dashboard/ApplicationsList';
-import AnalyticsDashboard from '@/components/dashboard/AnalyticsDashboard';
 import { useAuth } from "@/contexts/AuthContext";
+import { JobProvider } from "@/contexts/JobContext";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = React.useState("matches");
@@ -49,107 +47,91 @@ const Dashboard = () => {
   const profile = profileResponse?.data;
   
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
-      <div className="flex-1 bg-gray-50 dark:bg-slate-900 pt-6 pb-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-              <p className="text-gray-600 dark:text-gray-300">Welcome back! Here's your job search overview.</p>
+    <JobProvider>
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        
+        <div className="flex-1 bg-gray-50 dark:bg-slate-900 pt-6 pb-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+                <p className="text-gray-600 dark:text-gray-300">Welcome back! Here's your job search overview.</p>
+              </div>
             </div>
-          </div>
-          
-          <DashboardStats profile={profile} />
+            
+            <DashboardStats profile={profile} />
 
-          {profileLoading ? (
-            <div className="bg-white dark:bg-slate-800 rounded-lg p-8 text-center mb-6">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-500 dark:text-gray-400">Loading profile...</p>
-            </div>
-          ) : profileError ? (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-6">
-              <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">Profile Loading Error</h3>
-              <p className="text-red-600 dark:text-red-300 mb-4">
-                Unable to load your profile. This might be due to:
-              </p>
-              <ul className="text-sm text-red-600 dark:text-red-300 list-disc list-inside space-y-1 mb-4">
-                <li>Backend server not running</li>
-                <li>Network connectivity issues</li>
-                <li>Authentication token expired</li>
-              </ul>
-              <p className="text-sm text-red-500 dark:text-red-400">
-                Error: {profileError?.message || 'Unknown error'}
-              </p>
-            </div>
-          ) : (
-            <UserProfile profile={profile} onEditClick={() => navigate('/update-profile')} />
-          )}
-          
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="mb-6 bg-white dark:bg-slate-800 rounded-lg p-2 shadow-sm border">
-              <TabsList className="grid w-full grid-cols-4 gap-2 bg-transparent">
-                <TabsTrigger 
-                  value="matches" 
-                  className="flex items-center justify-center py-3 px-4 rounded-md transition-all duration-200 data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg"
-                >
-                  <Briefcase className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Job Matches</span>
-                  <span className="sm:hidden">Matches</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="applications" 
-                  className="flex items-center justify-center py-3 px-4 rounded-md transition-all duration-200 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg"
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Applications</span>
-                  <span className="sm:hidden">Apps</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="related-jobs" 
-                  className="flex items-center justify-center py-3 px-4 rounded-md transition-all duration-200 data-[state=active]:bg-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg"
-                >
-                  <Bookmark className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Related Jobs</span>
-                  <span className="sm:hidden">Related</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="analytics" 
-                  className="flex items-center justify-center py-3 px-4 rounded-md transition-all duration-200 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg"
-                >
-                  <BarChart className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Analytics</span>
-                  <span className="sm:hidden">Stats</span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            
-            <TabsContent value="matches" className="space-y-4">
-              <JobMatchesList />
-            </TabsContent>
-            
-            <TabsContent value="applications">
-              <ApplicationsList />
-            </TabsContent>
-            
-            <TabsContent value="related-jobs" className="space-y-4">
-              <div className="text-center py-8">
-                <Bookmark className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Related Jobs</h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  Discover jobs related to your profile and preferences
+            {profileLoading ? (
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-8 text-center mb-6">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p className="text-gray-500 dark:text-gray-400">Loading profile...</p>
+              </div>
+            ) : profileError ? (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-6">
+                <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">Profile Loading Error</h3>
+                <p className="text-red-600 dark:text-red-300 mb-4">
+                  Unable to load your profile. This might be due to:
+                </p>
+                <ul className="text-sm text-red-600 dark:text-red-300 list-disc list-inside space-y-1 mb-4">
+                  <li>Backend server not running</li>
+                  <li>Network connectivity issues</li>
+                  <li>Authentication token expired</li>
+                </ul>
+                <p className="text-sm text-red-500 dark:text-red-400">
+                  Error: {profileError?.message || 'Unknown error'}
                 </p>
               </div>
-            </TabsContent>
+            ) : (
+              <UserProfile profile={profile} onEditClick={() => navigate('/update-profile')} />
+            )}
             
-            <TabsContent value="analytics">
-              <AnalyticsDashboard />
-            </TabsContent>
-          </Tabs>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <Card className="overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
+                <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4">
+                  <CardTitle className="text-lg font-semibold flex items-center">
+                    <Briefcase className="mr-2 h-5 w-5" />
+                    Job Management
+                  </CardTitle>
+                  <p className="text-blue-100 text-sm mt-1">
+                    Manage your job matches and applications
+                  </p>
+                  <div className="mt-4">
+                    <TabsList className="grid w-full grid-cols-2 gap-2 bg-white/10 backdrop-blur-sm rounded-lg p-1">
+                      <TabsTrigger 
+                        value="matches" 
+                        className="flex items-center justify-center py-2 px-4 rounded-md transition-all duration-200 text-white/80 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-lg data-[state=active]:font-medium"
+                      >
+                        <Briefcase className="mr-2 h-4 w-4" />
+                        <span className="hidden sm:inline">Job Matches</span>
+                        <span className="sm:hidden">Matches</span>
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="applications" 
+                        className="flex items-center justify-center py-2 px-4 rounded-md transition-all duration-200 text-white/80 data-[state=active]:bg-white data-[state=active]:text-green-600 data-[state=active]:shadow-lg data-[state=active]:font-medium"
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        <span className="hidden sm:inline">Applications</span>
+                        <span className="sm:hidden">Apps</span>
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+                </CardHeader>
+                <CardContent className="h-[85vh] overflow-y-auto p-0">
+                  <TabsContent value="matches" className="m-0 h-full">
+                    <JobMatchesList />
+                  </TabsContent>
+                  
+                  <TabsContent value="applications" className="m-0 h-full">
+                    <ApplicationsList />
+                  </TabsContent>
+                </CardContent>
+              </Card>
+            </Tabs>
+          </div>
         </div>
       </div>
-    </div>
+    </JobProvider>
   );
 };
 

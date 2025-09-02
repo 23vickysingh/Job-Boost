@@ -88,3 +88,20 @@ export const fetchJobMatches = (params?: { limit?: number; offset?: number; min_
 export const fetchJobMatchStats = () => api.get("/jobs/matches/stats");
 
 export const fetchJobMatch = (matchId: number) => api.get(`/jobs/matches/${matchId}`);
+
+// Contact API
+export const submitContactForm = (contactData: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  contact_type: string;
+}) => api.post("/contact/submit", contactData);
+
+export const fetchContactMessages = (params?: { limit?: number; offset?: number; status?: string }) =>
+  api.get("/contact/messages", { params });
+
+export const resolveContactMessage = (contactId: number) =>
+  api.put(`/contact/messages/${contactId}/resolve`);
+
+export const fetchContactStats = () => api.get("/contact/stats");

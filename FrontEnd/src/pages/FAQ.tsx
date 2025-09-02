@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
@@ -20,14 +21,6 @@ const FAQ = () => {
     {
       question: "How does the automated job application system work?",
       answer: "Once you've uploaded your resume and set your job preferences, our system will match you with relevant opportunities based on your skills, experience, and preferences. When a high-match job is found, the system can automatically apply on your behalf, sending your profile and customized application. You'll receive notifications for each application sent and can track their status in your dashboard."
-    },
-    {
-      question: "What are the pricing plans?",
-      answer: "We offer three main pricing plans: Free (limited job matches and manual applications), Premium ($19.99/month with unlimited job matches and up to 20 auto-applications), and Enterprise ($49.99/month with unlimited auto-applications and priority support). Please visit our Pricing page for detailed information on each plan's features."
-    },
-    {
-      question: "What is your refund policy?",
-      answer: "We offer a 7-day money-back guarantee for new Premium and Enterprise subscriptions. If you're not satisfied with our service, you can request a full refund within 7 days of your initial purchase. For refunds, please contact our support team through the Help Center with your account details and reason for the refund request."
     },
     {
       question: "How accurate is the resume parsing?",
@@ -68,13 +61,54 @@ const FAQ = () => {
           <div className="mt-12 text-center">
             <p className="text-gray-600 dark:text-gray-300">
               Still have questions? 
-              <a href="#" className="text-blue-600 dark:text-blue-400 font-medium hover:underline ml-1">
+              <Link to="/contact" className="text-blue-600 dark:text-blue-400 font-medium hover:underline ml-1">
                 Contact our support team
-              </a>
+              </Link>
             </p>
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+            <div className="text-center md:text-left mb-6 md:mb-0">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">JobBoost</h2>
+              <p className="mt-2 text-gray-600 dark:text-gray-300">
+                Your smart job-hunting assistant
+              </p>
+            </div>
+            <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-8">
+              <div className="text-center md:text-left">
+                <h3 className="font-medium text-gray-900 dark:text-white">Quick Links</h3>
+                <ul className="mt-2 space-y-2">
+                  <li>
+                    <Link to="/about" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                      About
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/faq" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                      FAQ
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/contact" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                      Contact
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800 text-center">
+            <p className="text-gray-600 dark:text-gray-300">
+              &copy; {new Date().getFullYear()} JobBoost. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

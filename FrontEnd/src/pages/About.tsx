@@ -4,8 +4,11 @@ import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Award, Clock, Globe, Briefcase } from "lucide-react";
 import Navbar from '@/components/Navbar';
+import { useAuth } from "@/contexts/AuthContext";
 
 const About = () => {
+  const { token } = useAuth();
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -126,9 +129,9 @@ const About = () => {
             Join thousands of job seekers who have already discovered the power of automated job applications.
           </p>
           <div className="mt-10">
-            <Link to="/signup">
+            <Link to={token ? "/dashboard" : "/signup"}>
               <Button className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-6">
-                Get Started Now
+                {token ? "Go to your Profile" : "Get Started Now"}
               </Button>
             </Link>
           </div>
@@ -157,21 +160,6 @@ const About = () => {
                     </Link>
                   </li>
                   <li>
-                    <Link to="/features" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
-                      Features
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/pricing" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
-                      Pricing
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-              <div className="text-center md:text-left">
-                <h3 className="font-medium text-gray-900 dark:text-white">Support</h3>
-                <ul className="mt-2 space-y-2">
-                  <li>
                     <Link to="/faq" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                       FAQ
                     </Link>
@@ -179,11 +167,6 @@ const About = () => {
                   <li>
                     <Link to="/contact" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                       Contact
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/privacy" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
-                      Privacy
                     </Link>
                   </li>
                 </ul>

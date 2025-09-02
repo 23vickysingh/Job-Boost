@@ -10,46 +10,24 @@ import {
   Plus, 
   Check, 
   Bookmark,
-  ArrowRight,
   ExternalLink,
   MapPin,
   Building,
   Calendar,
-  Clock
+  Clock,
+  X,
+  CheckCircle
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchJobMatches } from "@/lib/api";
 import { formatDistanceToNow, parseISO } from "date-fns";
-
-// Interface for job match from API
-interface JobMatch {
-  id: number;
-  user_id: number;
-  job_id: number;
-  relevance_score: number;
-  created_at: string;
-  job: {
-    id: number;
-    job_id: string;
-    employer_name?: string;
-    job_title?: string;
-    job_description?: string;
-    job_apply_link?: string;
-    job_city?: string;
-    job_country?: string;
-    job_employment_type?: string;
-    employer_logo?: string;
-    job_is_remote?: boolean;
-    job_posted_at_datetime_utc?: string;
-    job_required_skills?: string[];
-    job_min_salary?: number;
-    job_max_salary?: number;
-    job_salary_currency?: string;
-    job_salary_period?: string;
-  };
-}
+import { useJobs, type JobMatch } from "@/contexts/JobContext";
+import { toast } from "sonner";
 
 const JobMatchesList: React.FC = () => {
+  // Get job management functions from context
+  const { addToApplications, removeJobMatch, isJobApplied, isJobRemoved } = useJobs();
+  
   // Fetch job matches from API
   const { data: jobMatchesResponse, isLoading, error } = useQuery({
     queryKey: ["jobMatches"],
@@ -103,6 +81,20 @@ const JobMatchesList: React.FC = () => {
     }
   };
 
+  // Handler for moving job to applications
+  const handleMoveToApplications = (jobMatch: JobMatch) => {
+    addToApplications(jobMatch);
+    toast.success("Job moved to applications successfully!");
+  };
+
+  // Handler for removing job from matches
+  const handleNotInterested = (jobMatchId: number) => {
+    removeJobMatch(jobMatchId);
+  };
+
+  // Filter out removed jobs
+  const filteredJobMatches = jobMatches.filter(match => !isJobRemoved(match.id));
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -144,42 +136,36 @@ const JobMatchesList: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Job Matches ({jobMatches.length})
+    <div className="h-full overflow-hidden flex flex-col">
+      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800/50">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Job Matches ({filteredJobMatches.length})
         </h2>
-        <Button variant="ghost" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
-          View All
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
       </div>
       
-      {jobMatches.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <div className="space-y-4">
-              <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                <Bookmark className="w-12 h-12 text-gray-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  No job matches yet
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  Complete your profile and set job preferences to get personalized job matches.
-                </p>
-                <Button className="inline-flex items-center">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Complete Profile
-                </Button>
-              </div>
+      {filteredJobMatches.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-4">
+            <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+              <Bookmark className="w-12 h-12 text-gray-400" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                No job matches yet
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">
+                Complete your profile and set job preferences to get personalized job matches.
+              </p>
+              <Button className="inline-flex items-center">
+                <Plus className="mr-2 h-4 w-4" />
+                Complete Profile
+              </Button>
+            </div>
+          </div>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {jobMatches.map((match) => (
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {filteredJobMatches.map((match) => (
             <Card key={match.id} className="hover:shadow-lg transition-shadow duration-200">
               <CardContent className="p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -261,24 +247,50 @@ const JobMatchesList: React.FC = () => {
                 )}
                 
                 <div className="flex justify-between items-center">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="text-gray-600 dark:text-gray-300"
-                  >
-                    <Bookmark className="mr-2 h-4 w-4" />
-                    Save Job
-                  </Button>
+                  {isJobApplied(match.job.job_id) ? (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      disabled
+                      className="text-green-600 dark:text-green-400 border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-900/20"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Already Applied
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleMoveToApplications(match)}
+                      className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    >
+                      <Check className="mr-2 h-4 w-4" />
+                      Move to Applications
+                    </Button>
+                  )}
                   
-                  <Button
-                    size="sm"
-                    onClick={() => handleApplyClick(match.job.job_apply_link)}
-                    disabled={!match.job.job_apply_link}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Apply Now
-                  </Button>
+                  <div className="flex gap-2">
+                    {!isJobApplied(match.job.job_id) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleNotInterested(match.id)}
+                        className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Not Interested
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => handleApplyClick(match.job.job_apply_link)}
+                      disabled={!match.job.job_apply_link}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Apply Now
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
