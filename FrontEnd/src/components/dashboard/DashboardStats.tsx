@@ -39,42 +39,14 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ profile }) => {
     queryKey: ["jobStats"],
     queryFn: fetchJobMatchStats,
   });
-
-  // Calculate profile strength based on available data
-  const calculateProfileStrength = (): number => {
-    if (!profile) return 0;
-    
-    let score = 0;
-    const maxScore = 8;
-    
-    // Basic info (20% each)
-    if (profile.query) score += 1;
-    if (profile.location) score += 1;
-    if (profile.mode_of_job) score += 1;
-    if (profile.work_experience) score += 1;
-    
-    // Employment preferences (10% each)
-    if (profile.employment_types && profile.employment_types.length > 0) score += 1;
-    if (profile.company_types && profile.company_types.length > 0) score += 1;
-    
-    // Resume data (20%)
-    if (profile.resume_parsed) score += 1;
-    
-    // Additional requirements (10%)
-    if (profile.job_requirements) score += 1;
-    
-    return Math.round((score / maxScore) * 100);
-  };
-
-  const profileStrength = calculateProfileStrength();
   
   // Get job statistics from API or use defaults
   const totalMatches = jobStats?.data?.total_matches || 0;
   const highRelevanceJobs = jobStats?.data?.high_relevance_jobs || 0;
   const recentMatches = jobStats?.data?.recent_matches || 0;
-  
-  // Mock data for applications - would come from API in real app
-  const mockApplications = 0;
+  const appliedJobs = jobStats?.data?.applied_jobs || 0;
+  const atsScore = jobStats?.data?.ats_score;
+  const atsPercentage = jobStats?.data?.ats_percentage || 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -131,34 +103,53 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ profile }) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{mockApplications}</div>
+          <div className="text-2xl font-bold">
+            {statsLoading ? (
+              <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+            ) : (
+              appliedJobs
+            )}
+          </div>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             <span className="text-green-500 dark:text-green-400">0</span> from last week
           </p>
         </CardContent>
       </Card>
             
-      {/* Profile Strength Card - Fourth Position */}
+      {/* ATS Score Card - Fourth Position */}
       <Card className="hover:shadow-lg transition-shadow duration-200">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
             <User className="mr-2 h-4 w-4" />
-            Profile Strength
+            ATS Score
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-2">
-            <div className="text-2xl font-bold">{profileStrength}%</div>
-            {profileStrength > 70 ? (
+            <div className="text-2xl font-bold">
+              {statsLoading ? (
+                <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+              ) : atsScore !== null ? (
+                `${atsPercentage}%`
+              ) : (
+                "N/A"
+              )}
+            </div>
+            {atsPercentage > 70 ? (
               <ArrowUpRight className="h-4 w-4 text-green-500 dark:text-green-400" />
+            ) : atsPercentage > 40 ? (
+              <ArrowUpRight className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />
             ) : (
-              <ArrowUpRight className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+              <ArrowUpRight className="h-4 w-4 text-red-500 dark:text-red-400" />
             )}
           </div>
-          <Progress value={profileStrength} className="h-2 mt-2" />
+          {atsScore !== null && (
+            <Progress value={atsPercentage} className="h-2 mt-2" />
+          )}
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {profileStrength < 50 ? "Complete your profile" : 
-             profileStrength < 80 ? "Almost there!" : "Excellent profile!"}
+            {atsScore === null ? "Upload resume to see score" :
+             atsPercentage < 40 ? "Resume needs improvement" : 
+             atsPercentage < 70 ? "Good ATS compatibility" : "Excellent ATS score!"}
           </p>
         </CardContent>
       </Card>

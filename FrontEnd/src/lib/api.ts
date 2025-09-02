@@ -89,6 +89,12 @@ export const fetchJobMatchStats = () => api.get("/jobs/matches/stats");
 
 export const fetchJobMatch = (matchId: number) => api.get(`/jobs/matches/${matchId}`);
 
+export const updateJobMatchStatus = (matchId: number, status: string) =>
+  api.put(`/jobs/matches/${matchId}/status?status=${status}`);
+
+export const fetchApplications = (params?: { limit?: number; offset?: number }) =>
+  api.get("/jobs/applications", { params });
+
 // Contact API
 export const submitContactForm = (contactData: {
   name: string;
@@ -105,3 +111,7 @@ export const resolveContactMessage = (contactId: number) =>
   api.put(`/contact/messages/${contactId}/resolve`);
 
 export const fetchContactStats = () => api.get("/contact/stats");
+
+// ATS Score API
+export const fetchATSScore = (forceRefresh: boolean = false) => 
+  api.get(`/profile/ats-score${forceRefresh ? '?force_refresh=true' : ''}`);

@@ -2,9 +2,11 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+import logging
 
 import tasks.job_search as job_search_tasks
 from database import get_db
+from auto_migrate import migrate_ats_columns
 
 from routers import user, profile, jobs, contact
 from database import Base, engine
@@ -12,8 +14,19 @@ from database import Base, engine
 # Load environment variables from .env file
 load_dotenv()
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Create all tables
 Base.metadata.create_all(bind=engine)
+
+# Run auto-migration for ATS columns
+try:
+    db = next(get_db())
+    migrate_ats_columns(db)
+except Exception as e:
+    logger.error(f"Auto-migration failed: {str(e)}")
 
 app = FastAPI(
     title="Job Boost API",

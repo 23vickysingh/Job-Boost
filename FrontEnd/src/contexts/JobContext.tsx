@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { updateJobMatchStatus } from '@/lib/api';
 
 // Job interface matching the API structure
 export interface Job {
@@ -28,6 +29,7 @@ export interface JobMatch {
   job_id: number;
   relevance_score: number;
   created_at: string;
+  status?: string;  // Add status field from the database
   job: Job;
 }
 
@@ -46,7 +48,7 @@ interface JobContextType {
   applications: Application[];
   appliedJobIds: Set<string>;
   removedJobIds: Set<number>;
-  addToApplications: (jobMatch: JobMatch) => void;
+  addToApplications: (jobMatch: JobMatch) => Promise<void>;
   removeApplication: (applicationId: number) => void;
   removeJobMatch: (jobMatchId: number) => void;
   isJobApplied: (jobId: string) => boolean;
@@ -72,19 +74,28 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
   const [removedJobIds, setRemovedJobIds] = useState<Set<number>>(new Set());
 
-  const addToApplications = (jobMatch: JobMatch) => {
-    const newApplication: Application = {
-      id: Date.now(), // Generate unique ID
-      job_id: jobMatch.job.job_id,
-      title: jobMatch.job.job_title || 'Unknown Position',
-      company: jobMatch.job.employer_name || 'Unknown Company',
-      appliedDate: new Date().toLocaleDateString(),
-      status: 'Applied',
-      job: jobMatch.job,
-    };
+  const addToApplications = async (jobMatch: JobMatch) => {
+    try {
+      // Update the status in the database
+      await updateJobMatchStatus(jobMatch.id, 'applied');
+      
+      // Update local state
+      const newApplication: Application = {
+        id: Date.now(), // Generate unique ID
+        job_id: jobMatch.job.job_id,
+        title: jobMatch.job.job_title || 'Unknown Position',
+        company: jobMatch.job.employer_name || 'Unknown Company',
+        appliedDate: new Date().toLocaleDateString(),
+        status: 'Applied',
+        job: jobMatch.job,
+      };
 
-    setApplications(prev => [...prev, newApplication]);
-    setAppliedJobIds(prev => new Set(prev.add(jobMatch.job.job_id)));
+      setApplications(prev => [...prev, newApplication]);
+      setAppliedJobIds(prev => new Set(prev.add(jobMatch.job.job_id)));
+    } catch (error) {
+      console.error('Failed to update job match status:', error);
+      throw error; // Re-throw to handle in component
+    }
   };
 
   const removeApplication = (applicationId: number) => {

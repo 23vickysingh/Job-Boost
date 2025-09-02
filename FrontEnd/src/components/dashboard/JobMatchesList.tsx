@@ -19,7 +19,7 @@ import {
   CheckCircle
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchJobMatches } from "@/lib/api";
+import { fetchJobMatches, updateJobMatchStatus } from "@/lib/api";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { useJobs, type JobMatch } from "@/contexts/JobContext";
 import { toast } from "sonner";
@@ -82,18 +82,33 @@ const JobMatchesList: React.FC = () => {
   };
 
   // Handler for moving job to applications
-  const handleMoveToApplications = (jobMatch: JobMatch) => {
-    addToApplications(jobMatch);
-    toast.success("Job moved to applications successfully!");
+  const handleMoveToApplications = async (jobMatch: JobMatch) => {
+    try {
+      await addToApplications(jobMatch);
+      toast.success("Job moved to applications successfully!");
+      // Refresh the job matches to update the UI
+      window.location.reload(); // Simple refresh - you could implement more sophisticated state management
+    } catch (error) {
+      console.error('Failed to move job to applications:', error);
+      toast.error("Failed to move job to applications. Please try again.");
+    }
   };
 
   // Handler for removing job from matches
-  const handleNotInterested = (jobMatchId: number) => {
-    removeJobMatch(jobMatchId);
+  const handleNotInterested = async (jobMatchId: number) => {
+    try {
+      await updateJobMatchStatus(jobMatchId, 'not_interested');
+      toast.success("Job marked as not interested");
+      // Refresh the job matches to update the UI
+      window.location.reload(); // Simple refresh - you could implement more sophisticated state management
+    } catch (error) {
+      console.error('Failed to update job status:', error);
+      toast.error("Failed to update job status. Please try again.");
+    }
   };
 
-  // Filter out removed jobs
-  const filteredJobMatches = jobMatches.filter(match => !isJobRemoved(match.id));
+  // Show all job matches - filtering by status is now handled by the backend
+  const filteredJobMatches = jobMatches;
 
   if (isLoading) {
     return (
@@ -247,7 +262,7 @@ const JobMatchesList: React.FC = () => {
                 )}
                 
                 <div className="flex justify-between items-center">
-                  {isJobApplied(match.job.job_id) ? (
+                  {match.status === 'applied' ? (
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -270,7 +285,7 @@ const JobMatchesList: React.FC = () => {
                   )}
                   
                   <div className="flex gap-2">
-                    {!isJobApplied(match.job.job_id) && (
+                    {match.status !== 'applied' && (
                       <Button
                         variant="outline"
                         size="sm"

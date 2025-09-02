@@ -11,6 +11,12 @@ class ContactStatus(enum.Enum):
     resolved = "resolved"
 
 
+class JobMatchStatus(enum.Enum):
+    pending = "pending"
+    applied = "applied"
+    not_interested = "not_interested"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -38,6 +44,8 @@ class UserProfile(Base):
     resume_location = Column(String(500), nullable=True)  # Path to uploaded resume
     resume_text = Column(Text, nullable=True)  # Raw extracted text from resume
     resume_parsed = Column(JSON, nullable=True)  # Processed/structured data from Gemini AI
+    ats_score = Column(Float, nullable=True)  # ATS score (0.0 to 1.0 or percentage)
+    ats_score_calculated_at = Column(DateTime, nullable=True)  # When ATS score was last calculated
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="profile")
@@ -84,6 +92,7 @@ class JobMatch(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
     relevance_score = Column(Float, nullable=False)
+    status = Column(Enum(JobMatchStatus), default=JobMatchStatus.pending, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships to easily access User and Job objects

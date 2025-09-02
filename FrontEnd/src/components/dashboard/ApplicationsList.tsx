@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -10,16 +10,76 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, X } from "lucide-react";
-import { useJobs } from "@/contexts/JobContext";
+import { fetchApplications, updateJobMatchStatus } from "@/lib/api";
 import { toast } from "sonner";
 
+interface Job {
+  id: number;
+  job_id: string;
+  job_title: string;
+  employer_name: string;
+  job_description?: string;
+  job_city?: string;
+  job_country?: string;
+  job_employment_type?: string;
+  job_min_salary?: number;
+  job_max_salary?: number;
+  job_salary_currency?: string;
+}
+
+interface Application {
+  id: number;
+  user_id: number;
+  job_id: number;
+  relevance_score: number;
+  created_at: string;
+  status: string;
+  job: Job;  // Nested job details from the API
+}
+
 const ApplicationsList: React.FC = () => {
-  const { applications, removeApplication } = useJobs();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch applications from API
+  useEffect(() => {
+    const loadApplications = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        console.log('Fetching applications...');
+        const response = await fetchApplications();
+        console.log('Applications response:', response);
+        setApplications(response.data || []);
+      } catch (err) {
+        console.error('Error fetching applications:', err);
+        setError('Failed to load applications');
+        toast.error('Failed to load applications');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadApplications();
+  }, []);
 
   // Handler for closing an application
-  const handleCloseApplication = (applicationId: number) => {
-    removeApplication(applicationId);
-    toast.success("Application closed successfully!");
+  const handleCloseApplication = async (applicationId: number) => {
+    try {
+      await updateJobMatchStatus(applicationId, 'not_interested');
+      // Remove from local state
+      setApplications(prev => prev.filter(app => app.id !== applicationId));
+      toast.success("Application closed successfully!");
+    } catch (error) {
+      console.error('Error closing application:', error);
+      toast.error("Failed to close application");
+    }
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
   };
 
   return (
@@ -31,7 +91,30 @@ const ApplicationsList: React.FC = () => {
         </div>
       </div>
       
-      {applications.length === 0 ? (
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="text-gray-500 dark:text-gray-400">Loading applications...</p>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-4">
+            <div className="mx-auto w-24 h-24 bg-red-100 dark:bg-red-800 rounded-full flex items-center justify-center">
+              <FileText className="w-12 h-12 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-medium text-red-900 dark:text-red-300 mb-2">
+                Error loading applications
+              </h3>
+              <p className="text-red-500 dark:text-red-400">
+                {error}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : applications.length === 0 ? (
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center space-y-4">
             <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
@@ -62,20 +145,20 @@ const ApplicationsList: React.FC = () => {
             <tbody>
               {applications.map(app => (
                 <tr key={app.id} className="border-b dark:border-gray-700">
-                  <td className="px-6 py-4 font-medium">{app.title}</td>
-                  <td className="px-6 py-4">{app.company}</td>
-                  <td className="px-6 py-4">{app.appliedDate}</td>
+                  <td className="px-6 py-4 font-medium">{app.job.job_title}</td>
+                  <td className="px-6 py-4">{app.job.employer_name}</td>
+                  <td className="px-6 py-4">{formatDate(app.created_at)}</td>
                   <td className="px-6 py-4">
                     <Badge
                       className={
-                        app.status === "Interview" 
-                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" 
-                          : app.status === "Rejected"
+                        app.status === "applied"
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                          : app.status === "not_interested"
                           ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                          : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                          : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
                       }
                     >
-                      {app.status}
+                      {app.status === "applied" ? "Applied" : app.status === "not_interested" ? "Not Interested" : "Pending"}
                     </Badge>
                   </td>
                   <td className="px-6 py-4">

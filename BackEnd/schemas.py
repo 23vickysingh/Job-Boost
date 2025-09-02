@@ -130,6 +130,8 @@ class UserProfileBase(BaseModel):
     resume_location: Optional[str] = None
     resume_text: Optional[str] = None
     resume_parsed: Optional[Dict[str, Any]] = None
+    ats_score: Optional[float] = None
+    ats_score_calculated_at: Optional[datetime] = None
 
 
 class UserProfileOut(UserProfileBase):
@@ -198,6 +200,7 @@ class JobMatchBase(BaseModel):
     user_id: int
     job_id: int
     relevance_score: float
+    status: Optional[str] = "pending"
 
 class JobMatchCreate(JobMatchBase):
     pass
@@ -232,3 +235,38 @@ class ContactOut(ContactBase):
 
     class Config:
         from_attributes = True
+
+
+# ---------------- Dashboard Stats Schema ----------------
+class DashboardStats(BaseModel):
+    total_matches: int
+    high_relevance_jobs: int 
+    recent_matches: int
+    applied_jobs: int
+    ats_score: Optional[float] = None
+    ats_percentage: int = 0
+
+
+# ---------------- Job Relevance Schemas ----------------
+class RelevanceCalculationResponse(BaseModel):
+    message: str
+    job_match_id: int
+    relevance_score: float
+    relevance_percentage: int
+
+
+class HighRelevanceJobMatch(BaseModel):
+    id: int
+    job_title: Optional[str] = None
+    company_name: Optional[str] = None
+    relevance_score: Optional[float] = None
+    relevance_percentage: int = 0
+    location: Optional[str] = None
+    created_at: datetime
+    status: str
+
+
+class HighRelevanceJobsResponse(BaseModel):
+    message: str
+    min_relevance: float
+    matches: List[HighRelevanceJobMatch]
