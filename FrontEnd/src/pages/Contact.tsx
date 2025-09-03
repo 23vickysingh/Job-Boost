@@ -251,24 +251,19 @@ const Contact = () => {
                     </div>
 
                     <Button 
-                      type="submit" 
+                      type="submit"
                       className="w-full btn-gradient"
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Sending...
-                        </>
+                        "Sending..."
                       ) : (
                         <>
                           <Send className="mr-2 h-4 w-4" />
                           Send Message
                         </>
                       )}
-                    </Button>
-
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                    </Button>                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
                       * Required fields. We'll respond within 24 hours.
                     </p>
                   </form>

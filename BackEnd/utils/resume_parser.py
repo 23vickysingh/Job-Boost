@@ -99,14 +99,17 @@ def extract_text_from_pdf_pymupdf(file_bytes: bytes) -> str:
 
 
 async def parse_resume_with_gemini(resume_text: str) -> Dict:
-    """Parse resume using Google Gemini API."""
+    """Parse resume using Google Gemini API with timeout handling."""
     if not api_key:
+        print("No API key found, using fallback parsing")
         return fallback_resume_parsing(resume_text)
     
     if not resume_text.strip():
         return {"error": "Empty resume text provided"}
     
     try:
+        print("Starting Gemini API resume parsing...")
+        
         # Configure the Gemini model (same as your working one.py)
         model = genai.GenerativeModel('gemini-1.5-flash-latest')
         
@@ -171,29 +174,45 @@ async def parse_resume_with_gemini(resume_text: str) -> Dict:
         ---
         """
         
-        # Direct API call (simplified like your working one.py)
+        # Direct API call with timeout handling
         def sync_generate():
-            response = model.generate_content(prompt)
-            return response.text
+            try:
+                response = model.generate_content(prompt)
+                return response.text
+            except Exception as e:
+                print(f"Gemini API call failed: {e}")
+                raise
         
-        # Run in thread pool to avoid blocking
+        # Run in thread pool with timeout to avoid blocking
         loop = asyncio.get_event_loop()
         with ThreadPoolExecutor() as executor:
-            response_text = await loop.run_in_executor(executor, sync_generate)
+            try:
+                # 60 second timeout for API call
+                response_text = await asyncio.wait_for(
+                    loop.run_in_executor(executor, sync_generate),
+                    timeout=60.0
+                )
+                print("Gemini API parsing completed successfully")
+            except asyncio.TimeoutError:
+                print("Gemini API call timed out, using fallback parsing")
+                return fallback_resume_parsing(resume_text)
         
         # Clean and parse the JSON response (same as your working one.py)
         cleaned_response = response_text.strip().replace('```json', '').replace('```', '').strip()
         
         parsed_json = json.loads(cleaned_response)
+        print("Resume parsing JSON decoded successfully")
         return parsed_json
         
     except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
         return {
             "error": "Failed to decode JSON from the API response.",
             "details": str(e),
             "raw_response": response_text[:500] + "..." if len(response_text) > 500 else response_text
         }
     except Exception as e:
+        print(f"Resume parsing error: {e}")
         return {"error": f"An unexpected error occurred: {str(e)}"}
 
 

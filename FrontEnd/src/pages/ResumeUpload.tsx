@@ -74,20 +74,41 @@ const ResumeUpload = () => {
     form.append("resume", file);
 
     setIsUploading(true);
+    setUploadProgress(0);
+    
     try {
-      await uploadResume(form);
+      await uploadResume(form, (progress) => {
+        // Update progress during upload
+        setUploadProgress(Math.min(progress, 90)); // Keep some progress for processing
+      });
+      
+      // Show processing phase
+      setUploadProgress(95);
+      toast.success("Resume uploaded! Processing with AI...");
+      
+      // Complete the progress
       setUploadProgress(100);
       setIsUploading(false);
       setUploadComplete(true);
-      toast.success("Resume uploaded successfully!");
+      
+      toast.success("Resume uploaded and parsed successfully!");
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
-    } catch (error) {
+      
+    } catch (error: any) {
       setIsUploading(false);
       setUploadProgress(0);
       console.error("Resume upload failed:", error);
-      toast.error("Failed to upload resume. Please try again.");
+      
+      // Better error messaging
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        toast.error("Upload timeout. Please try again with a smaller file or check your connection.");
+      } else if (error.response?.status === 400) {
+        toast.error(error.response.data?.detail || "Invalid file format. Please upload PDF, DOC, DOCX, or TXT files.");
+      } else {
+        toast.error("Failed to upload resume. Please try again.");
+      }
     }
   };
 
@@ -196,16 +217,6 @@ const ResumeUpload = () => {
                       </Button>
                     </div>
 
-                    {isUploading && (
-                      <div className="mt-4">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Uploading...</span>
-                          <span>{uploadProgress}%</span>
-                        </div>
-                        <Progress value={uploadProgress} className="h-2" />
-                      </div>
-                    )}
-
                     <div className="mt-6 flex justify-end">
                       <Button onClick={handleUpload} disabled={isUploading}>
                         {isUploading ? "Uploading..." : "Upload Resume"}
@@ -225,11 +236,9 @@ const ResumeUpload = () => {
                 <p className="text-gray-600 dark:text-gray-300 mb-6">
                   Our AI is analyzing your resume and finding the best job matches for you.
                 </p>
-                <div className="animate-pulse">
-                  <p className="text-blue-600 dark:text-blue-400">
-                    Redirecting to dashboard...
-                  </p>
-                </div>
+                <p className="text-blue-600 dark:text-blue-400">
+                  Redirecting to dashboard...
+                </p>
               </div>
             )}
           </Card>

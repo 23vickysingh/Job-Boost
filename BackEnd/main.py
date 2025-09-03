@@ -2,11 +2,9 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-import logging
 
 import tasks.job_search as job_search_tasks
 from database import get_db
-from auto_migrate import migrate_ats_columns
 
 from routers import user, profile, jobs, contact
 from database import Base, engine
@@ -14,19 +12,8 @@ from database import Base, engine
 # Load environment variables from .env file
 load_dotenv()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 # Create all tables
 Base.metadata.create_all(bind=engine)
-
-# Run auto-migration for ATS columns
-try:
-    db = next(get_db())
-    migrate_ats_columns(db)
-except Exception as e:
-    logger.error(f"Auto-migration failed: {str(e)}")
 
 app = FastAPI(
     title="Job Boost API",
@@ -37,13 +24,16 @@ app = FastAPI(
 # Enable CORS for the frontend
 origins = [
     "http://localhost:5173",  # Vite dev server
+    "http://127.0.0.1:5173",  # Vite dev server alternative
     "http://localhost:3000",  # Alternative dev port
+    "http://127.0.0.1:3000",  # Alternative dev port
     "http://frontend:80",     # Docker frontend service
+    "*"  # Allow all origins for development (remove in production)
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],

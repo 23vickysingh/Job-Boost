@@ -12,7 +12,7 @@ const FAQ = () => {
     },
     {
       question: "What types of resumes are supported?",
-      answer: "We support various resume formats including PDF, DOCX, and TXT files. For best results, we recommend using a clean, well-structured resume with clear sections for experience, education, and skills. ATS-friendly formats are recommended for optimal parsing accuracy."
+      answer: "We support various resume formats including PDF, DOCX, and TXT files. For best results, we recommend using a clean, well-structured resume with clear sections for experience, education, and skills."
     },
     {
       question: "Are there any constraints for resume uploads?",

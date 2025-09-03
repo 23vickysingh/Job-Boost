@@ -13,34 +13,6 @@ from auth.dependencies import get_current_user
 router = APIRouter(prefix="/profile", tags=["Profile"])
 
 
-@router.get("/test-ats")
-async def test_ats_columns(
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    """Test endpoint to verify ATS columns are working."""
-    try:
-        profile = _get_or_create_profile(db, current_user)
-        
-        # Try to update ATS score fields
-        profile.ats_score = 0.85
-        profile.ats_score_calculated_at = datetime.utcnow()
-        
-        db.commit()
-        db.refresh(profile)
-        
-        return {
-            "message": "ATS columns are working",
-            "ats_score": profile.ats_score,
-            "ats_score_calculated_at": profile.ats_score_calculated_at,
-            "status": "success"
-        }
-    except Exception as e:
-        return {
-            "message": f"ATS columns test failed: {str(e)}",
-            "status": "error"
-        }
-
 
 def _get_or_create_profile(db: Session, user: models.User) -> models.UserProfile:
     """
@@ -122,13 +94,16 @@ async def upload_resume(
         # Extract text from uploaded file
         resume_text = extract_text_from_upload(content, resume.filename)
         
-        # Parse resume with AI
+        # Parse resume with AI (this is the time-consuming part)
+        print(f"Starting AI parsing for user {current_user.id}...")
         parsed_data = await parse_resume_with_gemini(resume_text)
+        print(f"AI parsing completed for user {current_user.id}")
         
     except Exception as e:
         # Clean up file if parsing fails
         if os.path.exists(file_path):
             os.remove(file_path)
+        print(f"Resume parsing failed for user {current_user.id}: {str(e)}")
         raise HTTPException(
             status_code=400,
             detail=f"Failed to parse resume: {str(e)}"
@@ -144,17 +119,17 @@ async def upload_resume(
     db.commit()
     db.refresh(profile)
     
-    # Calculate ATS score after resume upload
-    from services.ats_service import calculate_and_update_ats_score
-    try:
-        import asyncio
-        ats_score = await calculate_and_update_ats_score(current_user.id, db)
-        print(f"Calculated ATS score: {ats_score}")
-    except Exception as e:
-        print(f"Failed to calculate ATS score: {e}")
+    # Trigger job search if user has job preferences set
+    if profile.query and profile.query.strip():
+        try:
+            print(f"Triggering job search for user {current_user.id} after resume upload...")
+            find_and_match_jobs_for_user.delay(current_user.id)
+        except Exception as e:
+            print(f"Failed to trigger job search: {e}")
+            # Don't fail resume upload if job search scheduling fails
     
     return schemas.ResumeUploadResponse(
-        message="Resume uploaded and parsed successfully",
+        message="Resume uploaded and parsed successfully.",
         filename=resume.filename,
         status="success"
     )
@@ -165,19 +140,8 @@ async def get_profile(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Get user profile with ATS score calculation if needed."""
+    """Get user profile."""
     profile = _get_or_create_profile(db, current_user)
-    
-    # Calculate ATS score if it's null and we have resume data
-    if (profile.ats_score is None and 
-        (profile.resume_text or profile.resume_parsed)):
-        from services.ats_service import calculate_and_update_ats_score
-        try:
-            ats_score = await calculate_and_update_ats_score(current_user.id, db)
-            print(f"Calculated ATS score for profile fetch: {ats_score}")
-        except Exception as e:
-            print(f"Failed to calculate ATS score in profile fetch: {e}")
-    
     return profile
 
 
@@ -276,72 +240,3 @@ async def get_complete_profile(
             pass
     
     return complete_profile
-
-
-@router.put("/ats-score")
-async def update_ats_score(
-    ats_score: float,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    """Update user's ATS score."""
-    
-    # Validate ATS score range
-    if not (0.0 <= ats_score <= 1.0):
-        raise HTTPException(status_code=400, detail="ATS score must be between 0.0 and 1.0")
-    
-    profile = _get_or_create_profile(db, current_user)
-    
-    # Update ATS score and timestamp
-    profile.ats_score = ats_score
-    profile.ats_score_calculated_at = datetime.utcnow()
-    profile.last_updated = datetime.utcnow()
-    
-    db.commit()
-    db.refresh(profile)
-    
-    return {
-        "message": "ATS score updated successfully",
-        "ats_score": profile.ats_score,
-        "ats_score_calculated_at": profile.ats_score_calculated_at
-    }
-
-
-@router.get("/ats-score")
-async def get_ats_score(
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    """Get or calculate ATS score for current user."""
-    
-    from services.ats_service import get_or_calculate_ats_score
-    
-    try:
-        ats_score = get_or_calculate_ats_score(current_user.id, db)
-        
-        if ats_score is None:
-            return {
-                "message": "Unable to calculate ATS score. Please upload a resume first.",
-                "ats_score": None,
-                "status": "no_resume"
-            }
-        
-        # Get the updated profile
-        profile = db.query(models.UserProfile).filter(
-            models.UserProfile.user_id == current_user.id
-        ).first()
-        
-        return {
-            "message": "ATS score retrieved successfully",
-            "ats_score": ats_score,
-            "ats_score_calculated_at": profile.ats_score_calculated_at,
-            "ats_percentage": int(ats_score * 100),
-            "status": "success"
-        }
-        
-    except Exception as e:
-        return {
-            "message": f"Error getting ATS score: {str(e)}",
-            "ats_score": None,
-            "status": "error"
-        }

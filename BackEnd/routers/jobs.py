@@ -87,32 +87,11 @@ async def get_job_match_stats(
             models.JobMatch.status == models.JobMatchStatus.applied
         ).count()
         
-        # Get ATS score from user profile
-        user_profile = db.query(models.UserProfile).filter(
-            models.UserProfile.user_id == current_user.id
-        ).first()
-        
-        ats_score = None
-        ats_percentage = 0
-        if user_profile and user_profile.ats_score is not None:
-            ats_score = user_profile.ats_score
-            ats_percentage = int(ats_score * 100)
-        elif user_profile and (user_profile.resume_text or user_profile.resume_parsed):
-            # Calculate ATS score if null but resume exists
-            from services.ats_service import get_or_calculate_ats_score
-            try:
-                ats_score = await get_or_calculate_ats_score(current_user.id, db)
-                ats_percentage = int(ats_score * 100) if ats_score else 0
-            except Exception as e:
-                print(f"Error calculating ATS score in stats: {e}")
-        
         return {
             "total_matches": total_matches,
             "high_relevance_jobs": high_relevance_jobs,
             "recent_matches": recent_matches,
-            "applied_jobs": applied_jobs,
-            "ats_score": ats_score,
-            "ats_percentage": ats_percentage
+            "applied_jobs": applied_jobs
         }
         
     except Exception as e:
@@ -304,4 +283,77 @@ async def get_high_relevance_jobs(
         raise HTTPException(
             status_code=500,
             detail=f"Error fetching high-relevance jobs: {str(e)}"
+        )
+
+
+@router.post("/matches/fix-zero-scores")
+async def fix_zero_relevance_scores(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Fix job matches that have zero relevance scores."""
+    try:
+        # Find matches with zero or very low relevance scores
+        zero_score_matches = db.query(models.JobMatch).filter(
+            models.JobMatch.user_id == current_user.id,
+            models.JobMatch.relevance_score <= 0.05  # Essentially zero
+        ).options(joinedload(models.JobMatch.job)).all()
+        
+        if not zero_score_matches:
+            return {
+                "message": "No job matches with zero scores found",
+                "fixed_count": 0
+            }
+        
+        # Get user profile for relevance calculation
+        user_profile = db.query(models.UserProfile).filter(
+            models.UserProfile.user_id == current_user.id
+        ).first()
+        
+        if not user_profile or not user_profile.resume_parsed:
+            raise HTTPException(
+                status_code=400,
+                detail="Resume data required for relevance calculation"
+            )
+        
+        from services.job_relevance_service import JobRelevanceCalculator
+        calculator = JobRelevanceCalculator()
+        
+        fixed_count = 0
+        for job_match in zero_score_matches:
+            if job_match.job and job_match.job.job_description:
+                try:
+                    # Calculate new relevance score
+                    new_relevance = await calculator.calculate_relevance_score(
+                        resume_data=user_profile.resume_parsed,
+                        job_description=job_match.job.job_description,
+                        job_title=job_match.job.job_title or "",
+                        job_requirements=job_match.job.job_required_skills or ""
+                    )
+                    
+                    # Update the job match
+                    job_match.relevance_score = new_relevance
+                    fixed_count += 1
+                    
+                    print(f"Fixed relevance score for job '{job_match.job.job_title}': 0.0 -> {new_relevance:.3f}")
+                    
+                except Exception as e:
+                    print(f"Error calculating relevance for job match {job_match.id}: {e}")
+                    continue
+        
+        db.commit()
+        
+        return {
+            "message": f"Successfully fixed {fixed_count} job matches with zero relevance scores",
+            "fixed_count": fixed_count,
+            "total_zero_scores": len(zero_score_matches)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fixing zero relevance scores: {str(e)}"
         )

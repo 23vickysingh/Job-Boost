@@ -130,8 +130,6 @@ class UserProfileBase(BaseModel):
     resume_location: Optional[str] = None
     resume_text: Optional[str] = None
     resume_parsed: Optional[Dict[str, Any]] = None
-    ats_score: Optional[float] = None
-    ats_score_calculated_at: Optional[datetime] = None
 
 
 class UserProfileOut(UserProfileBase):
@@ -243,8 +241,6 @@ class DashboardStats(BaseModel):
     high_relevance_jobs: int 
     recent_matches: int
     applied_jobs: int
-    ats_score: Optional[float] = None
-    ats_percentage: int = 0
 
 
 # ---------------- Job Relevance Schemas ----------------

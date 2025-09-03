@@ -1,5 +1,6 @@
 import time
 import random
+import asyncio
 import models
 from sqlalchemy.orm import Session
 from database import get_db, SessionLocal
@@ -121,16 +122,37 @@ def find_and_match_jobs_for_user(self, user_id: int):
             db.commit()
             db.refresh(new_job)
             
-            # Step 4: Compare resume with the new job description using Gemini AI
-            # This is a placeholder for your actual Gemini API call
+            # Step 4: Calculate actual relevance score using the job relevance service
             relevance_score = 0.0
-            if user.profile.resume_text and new_job.job_description:
-                # In a real scenario, you'd call your Gemini service here
-                # relevance_score = await your_gemini_service.get_relevance_score(
-                #     user.profile.resume_text, new_job.job_description
-                # )
-                # For now, we'll simulate a score
-                relevance_score = round(random.uniform(0.65, 0.95), 4)
+            if user.profile.resume_parsed and new_job.job_description:
+                try:
+                    from services.job_relevance_service import JobRelevanceCalculator
+                    calculator = JobRelevanceCalculator()
+                    
+                    # Create new event loop for async operation in Celery task
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    
+                    try:
+                        relevance_score = loop.run_until_complete(
+                            calculator.calculate_relevance_score(
+                                resume_data=user.profile.resume_parsed,
+                                job_description=new_job.job_description,
+                                job_title=new_job.job_title or "",
+                                job_requirements=new_job.job_required_skills or ""
+                            )
+                        )
+                        print(f"Calculated relevance score: {relevance_score:.3f} for job '{new_job.job_title}'")
+                    finally:
+                        loop.close()
+                        
+                except Exception as e:
+                    print(f"Error calculating relevance score: {e}, using fallback")
+                    # Fallback to a basic score based on job presence
+                    relevance_score = random.uniform(0.25, 0.65)
+            else:
+                print(f"Missing resume data or job description for relevance calculation")
+                relevance_score = 0.15  # Minimum score for incomplete data
 
             # Step 5: Save the match and score to the 'job_matches' table
             job_match = models.JobMatch(

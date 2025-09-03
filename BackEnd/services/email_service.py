@@ -15,23 +15,141 @@ class EmailService:
         self.api_url = "https://api.brevo.com/v3/smtp/email"
 
     def send_otp(self, to_email: str, otp: str) -> bool:
-        """Send OTP via Brevo. Returns True on success."""
+        """Send registration OTP via Brevo with enhanced template. Returns True on success."""
         if not self.api_key:
             return False
 
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+            <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #2563eb; margin: 0; font-size: 28px;">🚀 JobBoost</h1>
+                    <p style="color: #6b7280; margin: 5px 0 0 0;">Account Registration</p>
+                </div>
+                
+                <h2 style="color: #1f2937; margin-bottom: 20px;">Welcome to JobBoost!</h2>
+                
+                <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">
+                    Thank you for joining JobBoost! Please use the verification code below to complete your account registration:
+                </p>
+                
+                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; text-align: center; margin: 20px 0;">
+                    <h1 style="color: #2563eb; font-size: 32px; margin: 0; letter-spacing: 4px; font-weight: bold;">{otp}</h1>
+                    <p style="color: #6b7280; margin: 10px 0 0 0;">Enter this code to verify your account</p>
+                </div>
+                
+                <div style="background-color: #dbeafe; padding: 15px; border-radius: 6px; border-left: 4px solid #2563eb; margin: 20px 0;">
+                    <p style="color: #1e40af; margin: 0; font-size: 14px;">
+                        <strong>Next Steps:</strong> After verification, you'll be able to access your personalized job search dashboard and AI-powered features.
+                    </p>
+                </div>
+                
+                <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">
+                    This code will expire in 10 minutes for security purposes.
+                </p>
+                
+                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                    <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                        Welcome aboard,<br>
+                        <strong>The JobBoost Team</strong>
+                    </p>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                        This is an automated registration email. Please do not reply directly to this message.
+                    </p>
+                </div>
+            </div>
+        </div>
+        """
+
         payload = {
-            "sender": {"name": "JobBoost", "email": "no-reply@jobboost.com"},
+            "sender": {"name": "JobBoost", "email": "vickyawakinn@gmail.com"},
             "to": [{"email": to_email}],
-            "subject": "Your JobBoost OTP",
-            "htmlContent": f"<p>Your verification code is <strong>{otp}</strong></p>",
+            "subject": "🚀 Welcome to JobBoost - Verify Your Account",
+            "htmlContent": html_content,
         }
         headers = {"api-key": self.api_key, "Content-Type": "application/json"}
         try:
-            response = requests.post(self.api_url, json=payload, headers=headers)
+            response = requests.post(self.api_url, json=payload, headers=headers, timeout=30)
             response.raise_for_status()
+            print(f"Registration OTP email sent successfully to {to_email}")
             return True
         except requests.RequestException as e:
-            print(f"Brevo send failed: {e}")
+            print(f"Brevo registration OTP send failed: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                print(f"Response status: {e.response.status_code}")
+                print(f"Response text: {e.response.text}")
+            return False
+
+    def send_password_reset_otp(self, to_email: str, otp: str) -> bool:
+        """Send password reset OTP via Brevo with enhanced template. Returns True on success."""
+        if not self.api_key:
+            return False
+
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+            <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #2563eb; margin: 0; font-size: 28px;">🔐 JobBoost</h1>
+                    <p style="color: #6b7280; margin: 5px 0 0 0;">Password Reset Request</p>
+                </div>
+                
+                <h2 style="color: #1f2937; margin-bottom: 20px;">Password Reset Verification</h2>
+                
+                <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">
+                    We received a request to reset your JobBoost account password. Use the verification code below to proceed:
+                </p>
+                
+                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; text-align: center; margin: 20px 0;">
+                    <h1 style="color: #dc2626; font-size: 32px; margin: 0; letter-spacing: 4px; font-weight: bold;">{otp}</h1>
+                    <p style="color: #6b7280; margin: 10px 0 0 0;">Enter this code to reset your password</p>
+                </div>
+                
+                <div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+                    <p style="color: #92400e; margin: 0; font-size: 14px;">
+                        <strong>Security Notice:</strong> This code will expire in 10 minutes. If you didn't request a password reset, please ignore this email.
+                    </p>
+                </div>
+                
+                <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">
+                    If you're having trouble with the password reset process, please contact our support team.
+                </p>
+                
+                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                    <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                        Best regards,<br>
+                        <strong>The JobBoost Security Team</strong>
+                    </p>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                        This is an automated security email. Please do not reply directly to this message.
+                    </p>
+                </div>
+            </div>
+        </div>
+        """
+
+        payload = {
+            "sender": {"name": "JobBoost Security", "email": "vickyawakinn@gmail.com"},
+            "to": [{"email": to_email}],
+            "subject": "🔐 Password Reset Code for JobBoost",
+            "htmlContent": html_content,
+        }
+        headers = {"api-key": self.api_key, "Content-Type": "application/json"}
+        try:
+            response = requests.post(self.api_url, json=payload, headers=headers, timeout=30)
+            response.raise_for_status()
+            print(f"Password reset OTP email sent successfully to {to_email}")
+            return True
+        except requests.RequestException as e:
+            print(f"Brevo password reset OTP send failed: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                print(f"Response status: {e.response.status_code}")
+                print(f"Response text: {e.response.text}")
             return False
 
     def send_contact_confirmation(self, to_email: str, name: str, subject: str, contact_type: str) -> bool:
@@ -87,16 +205,20 @@ class EmailService:
         """
 
         payload = {
-            "sender": {"name": "JobBoost Support", "email": "support@jobboost.com"},
+            "sender": {"name": "JobBoost Support", "email": "vickyawakinn@gmail.com"},
             "to": [{"email": to_email, "name": name}],
             "subject": f"Thank you for contacting JobBoost - We've received your {contact_type} inquiry",
             "htmlContent": html_content,
         }
         headers = {"api-key": self.api_key, "Content-Type": "application/json"}
         try:
-            response = requests.post(self.api_url, json=payload, headers=headers)
+            response = requests.post(self.api_url, json=payload, headers=headers, timeout=30)
             response.raise_for_status()
+            print(f"Contact confirmation email sent successfully to {to_email}")
             return True
         except requests.RequestException as e:
             print(f"Brevo contact confirmation send failed: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                print(f"Response status: {e.response.status_code}")
+                print(f"Response text: {e.response.text}")
             return False

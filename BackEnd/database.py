@@ -7,14 +7,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # PostgreSQL Database Configuration
-POSTGRES_DATABASE_URL = os.getenv("POSTGRES_DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Create SQLAlchemy engine for PostgreSQL
-if POSTGRES_DATABASE_URL:
-    engine = create_engine(POSTGRES_DATABASE_URL, echo=False)
+if DATABASE_URL:
+    engine = create_engine(DATABASE_URL, echo=False)
 else:
-    print("⚠️ Warning: POSTGRES_DATABASE_URL not set, using fallback")
-    engine = create_engine("postgresql://user:password@localhost:5432/job_boost_db", echo=False)
+    print("⚠️ Warning: DATABASE_URL not set, using fallback")
+    engine = create_engine("postgresql://postgres:password@localhost:5432/job_boost", echo=False)
 
 # Create a configured session class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

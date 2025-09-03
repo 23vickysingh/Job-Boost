@@ -39,14 +39,12 @@ interface Application {
 
 const ApplicationsList: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch applications from API
   useEffect(() => {
     const loadApplications = async () => {
       try {
-        setLoading(true);
         setError(null);
         console.log('Fetching applications...');
         const response = await fetchApplications();
@@ -56,8 +54,6 @@ const ApplicationsList: React.FC = () => {
         console.error('Error fetching applications:', err);
         setError('Failed to load applications');
         toast.error('Failed to load applications');
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -91,14 +87,7 @@ const ApplicationsList: React.FC = () => {
         </div>
       </div>
       
-      {loading ? (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center space-y-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-500 dark:text-gray-400">Loading applications...</p>
-          </div>
-        </div>
-      ) : error ? (
+      {error ? (
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center space-y-4">
             <div className="mx-auto w-24 h-24 bg-red-100 dark:bg-red-800 rounded-full flex items-center justify-center">

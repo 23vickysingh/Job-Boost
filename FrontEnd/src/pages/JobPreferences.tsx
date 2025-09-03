@@ -27,7 +27,6 @@ const JobPreferences = () => {
     employment_types: [],
     company_types: []
   });
-  const [isLoading, setIsLoading] = React.useState(false);
 
   const employmentTypeOptions = [
     'Full-time',
@@ -117,8 +116,6 @@ const JobPreferences = () => {
       return;
     }
 
-    setIsLoading(true);
-    
     try {
       await saveJobPreferences(preferences);
       toast.success('Job preferences saved successfully!');
@@ -126,8 +123,6 @@ const JobPreferences = () => {
     } catch (error) {
       console.error('Failed to save job preferences:', error);
       toast.error('Failed to save job preferences. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -282,16 +277,14 @@ const JobPreferences = () => {
                 type="button" 
                 variant="outline" 
                 onClick={handleSkip}
-                disabled={isLoading}
               >
                 Skip for Now
               </Button>
               <Button 
-                type="submit" 
-                disabled={isLoading}
+                type="submit"
                 className="min-w-[120px]"
               >
-                {isLoading ? 'Saving...' : 'Continue'}
+                Continue
               </Button>
             </div>
           </form>

@@ -68,8 +68,13 @@ class OTPService:
         key = self._generate_key(identifier, purpose)
         
         try:
+            print(f"Verifying OTP for key: {key}")
             stored_data = self.redis_client.hgetall(key)
+            print(f"Stored data: {stored_data}")
+            print(f"Expected OTP: {otp_code}, Stored OTP: {stored_data.get('otp') if stored_data else 'None'}")
+            
             if not stored_data or stored_data.get("otp") != otp_code:
+                print(f"OTP verification failed for {identifier}")
                 return None
             
             # Extract additional data (excluding OTP)
@@ -77,6 +82,7 @@ class OTPService:
             
             # Delete OTP after verification (one-time use)
             self.redis_client.delete(key)
+            print(f"OTP verified and deleted for {identifier}")
             
             return additional_data
         except Exception as e:
@@ -98,8 +104,12 @@ class OTPService:
         key = self._generate_key(identifier, purpose)
         
         try:
+            print(f"Checking OTP validity for key: {key}")
             stored_data = self.redis_client.hgetall(key)
-            return bool(stored_data and stored_data.get("otp") == otp_code)
+            print(f"Stored data for validation: {stored_data}")
+            is_valid = bool(stored_data and stored_data.get("otp") == otp_code)
+            print(f"OTP valid check result: {is_valid}")
+            return is_valid
         except Exception as e:
             print(f"Error checking OTP validity: {e}")
             return False

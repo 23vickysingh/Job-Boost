@@ -34,7 +34,6 @@ const UpdateJobPreferences = () => {
     company_types: []
   });
   const [isEditing, setIsEditing] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(false);
   const [hasResume, setHasResume] = React.useState(false);
 
   const employmentTypeOptions = [
@@ -154,8 +153,6 @@ const UpdateJobPreferences = () => {
       return;
     }
 
-    setIsLoading(true);
-    
     try {
       await updateProfile(preferences);
       toast.success('Job preferences updated successfully!');
@@ -164,8 +161,6 @@ const UpdateJobPreferences = () => {
     } catch (error) {
       console.error('Failed to update job preferences:', error);
       toast.error('Failed to update job preferences. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -373,16 +368,14 @@ const UpdateJobPreferences = () => {
                     type="button" 
                     variant="outline" 
                     onClick={handleCancel}
-                    disabled={isLoading}
                   >
                     Cancel
                   </Button>
                   <Button 
-                    type="submit" 
-                    disabled={isLoading}
+                    type="submit"
                     className="min-w-[120px]"
                   >
-                    {isLoading ? 'Saving...' : 'Save Changes'}
+                    Save Changes
                   </Button>
                 </>
               )}

@@ -39,7 +39,7 @@ const Dashboard = () => {
     }
   }, [token, navigate]);
   // Fetch the user's profile with enhanced user information
-  const { data: profileResponse, error: profileError, isLoading: profileLoading } = useQuery({
+  const { data: profileResponse, error: profileError } = useQuery({
     queryKey: ["profile"],
     queryFn: fetchProfile,
   });
@@ -62,12 +62,7 @@ const Dashboard = () => {
             
             <DashboardStats profile={profile} />
 
-            {profileLoading ? (
-              <div className="bg-white dark:bg-slate-800 rounded-lg p-8 text-center mb-6">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <p className="text-gray-500 dark:text-gray-400">Loading profile...</p>
-              </div>
-            ) : profileError ? (
+            {profileError ? (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-6">
                 <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">Profile Loading Error</h3>
                 <p className="text-red-600 dark:text-red-300 mb-4">

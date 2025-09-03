@@ -44,8 +44,6 @@ class UserProfile(Base):
     resume_location = Column(String(500), nullable=True)  # Path to uploaded resume
     resume_text = Column(Text, nullable=True)  # Raw extracted text from resume
     resume_parsed = Column(JSON, nullable=True)  # Processed/structured data from Gemini AI
-    ats_score = Column(Float, nullable=True)  # ATS score (0.0 to 1.0 or percentage)
-    ats_score_calculated_at = Column(DateTime, nullable=True)  # When ATS score was last calculated
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="profile")
