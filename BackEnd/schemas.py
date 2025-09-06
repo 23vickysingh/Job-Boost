@@ -136,6 +136,7 @@ class UserProfileOut(UserProfileBase):
     id: int
     user_id: int
     last_updated: datetime
+    preferences_set: bool
     
     class Config:
         from_attributes = True

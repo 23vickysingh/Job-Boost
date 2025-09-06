@@ -41,20 +41,71 @@ async def create_job_preferences(
     
     profile = _get_or_create_profile(db, current_user)
 
-    # Update profile with new preferences
-    profile.query = preferences.query
-    profile.location = preferences.location
-    profile.mode_of_job = preferences.mode_of_job
-    profile.work_experience = preferences.work_experience
-    profile.employment_types = preferences.employment_types
-    profile.company_types = preferences.company_types
-    profile.job_requirements = preferences.job_requirements
+    # Check if all required fields are provided
+    required_fields = {
+        'query': preferences.query,
+        'location': preferences.location,
+        'mode_of_job': preferences.mode_of_job,
+        'work_experience': preferences.work_experience,
+        'employment_types': preferences.employment_types
+    }
+    
+    # Check if this is a clear operation (all required fields are empty/None)
+    all_required_empty = all(
+        value is None or 
+        (isinstance(value, str) and value.strip() == "") or
+        (isinstance(value, list) and len(value) == 0)
+        for value in required_fields.values()
+    )
+    
+    if all_required_empty:
+        # Clear all preferences and set preferences_set to False
+        profile.query = None
+        profile.location = None
+        profile.mode_of_job = None
+        profile.work_experience = None
+        profile.employment_types = []
+        profile.company_types = []
+        profile.job_requirements = None
+        profile.preferences_set = False
+    else:
+        # Check if all required fields are filled
+        missing_fields = []
+        if not preferences.query or preferences.query.strip() == "":
+            missing_fields.append("query")
+        if not preferences.location or preferences.location.strip() == "":
+            missing_fields.append("location")
+        if not preferences.mode_of_job or preferences.mode_of_job.strip() == "":
+            missing_fields.append("mode_of_job")
+        if not preferences.work_experience or preferences.work_experience.strip() == "":
+            missing_fields.append("work_experience")
+        if not preferences.employment_types or len(preferences.employment_types) == 0:
+            missing_fields.append("employment_types")
+        
+        if missing_fields:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Missing required fields: {', '.join(missing_fields)}"
+            )
+        
+        # Update profile with new preferences
+        profile.query = preferences.query
+        profile.location = preferences.location
+        profile.mode_of_job = preferences.mode_of_job
+        profile.work_experience = preferences.work_experience
+        profile.employment_types = preferences.employment_types
+        profile.company_types = preferences.company_types
+        profile.job_requirements = preferences.job_requirements
+        profile.preferences_set = True
+    
     profile.last_updated = datetime.utcnow()
     
     db.commit()
     db.refresh(profile)
 
-    find_and_match_jobs_for_user.delay(current_user.id)
+    # Only trigger job search if preferences are set and not cleared
+    if profile.preferences_set and profile.query and profile.query.strip():
+        find_and_match_jobs_for_user.delay(current_user.id)
 
     return profile
 
