@@ -130,6 +130,7 @@ class UserProfileBase(BaseModel):
     resume_location: Optional[str] = None
     resume_text: Optional[str] = None
     resume_parsed: Optional[Dict[str, Any]] = None
+    resume_remarks: Optional[Dict[str, Any]] = None
 
 
 class UserProfileOut(UserProfileBase):

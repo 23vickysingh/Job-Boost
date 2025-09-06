@@ -51,6 +51,7 @@ class UserProfile(Base):
     resume_location = Column(String(500), nullable=True)  # Path to uploaded resume
     resume_text = Column(Text, nullable=True)  # Raw extracted text from resume
     resume_parsed = Column(JSON, nullable=True)  # Processed/structured data from Gemini AI
+    resume_remarks = Column(JSON, nullable=True)  # AI analysis with good points, weak points, etc.
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     preferences_set = Column(Boolean, default=False)  # Flag to indicate if preferences are set
 

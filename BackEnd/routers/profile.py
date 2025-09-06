@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 
 import models, schemas
-from utils.resume_parser import extract_text_from_upload, parse_resume_with_gemini
+from utils.resume_parser import extract_text_from_upload, parse_resume_with_analysis, validate_file_constraints
 from tasks.job_search import find_and_match_jobs_for_user
 from database import get_db
 from auth.dependencies import get_current_user
@@ -104,8 +104,8 @@ async def create_job_preferences(
     db.refresh(profile)
 
     # Only trigger job search if preferences are set and not cleared
-    if profile.preferences_set and profile.query and profile.query.strip():
-        find_and_match_jobs_for_user.delay(current_user.id)
+    # if profile.preferences_set and profile.query and profile.query.strip():
+    #     find_and_match_jobs_for_user.delay(current_user.id)
 
     return profile
 
@@ -116,39 +116,81 @@ async def upload_resume(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Upload and parse resume."""
+    """Upload and parse resume with enhanced validation."""
     
-    # Validate file type
-    allowed_extensions = ['.pdf', '.doc', '.docx', '.txt']
-    file_extension = os.path.splitext(resume.filename)[1].lower()
-    
-    if file_extension not in allowed_extensions:
+    # Read file content first for validation
+    try:
+        content = await resume.read()
+    except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail="Invalid file type. Please upload a PDF, DOC, DOCX, or TXT file."
+            detail=f"Failed to read uploaded file: {str(e)}"
+        )
+    
+    # Validate file constraints (size and type)
+    validation_result = validate_file_constraints(content, resume.filename)
+    if not validation_result["valid"]:
+        raise HTTPException(
+            status_code=400,
+            detail=validation_result["errors"][0]  # Return first error
         )
     
     # Create uploads directory if it doesn't exist
     upload_dir = "uploads"
     os.makedirs(upload_dir, exist_ok=True)
     
-    # Save file
+    # Generate file path
     file_path = os.path.join(upload_dir, f"{current_user.id}_{resume.filename}")
     
     try:
-        # Read and save file content
-        content = await resume.read()
+        # Save file
         with open(file_path, "wb") as f:
             f.write(content)
         
         # Extract text from uploaded file
         resume_text = extract_text_from_upload(content, resume.filename)
         
-        # Parse resume with AI (this is the time-consuming part)
-        print(f"Starting AI parsing for user {current_user.id}...")
-        parsed_data = await parse_resume_with_gemini(resume_text)
+        if not resume_text or not resume_text.strip():
+            # Clean up file if no text extracted
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise HTTPException(
+                status_code=400,
+                detail="Unable to parse the resume. Make sure to upload a relevant document only."
+            )
+        
+        # Parse resume with AI and get analysis
+        print(f"Starting AI parsing and analysis for user {current_user.id}...")
+        result = await parse_resume_with_analysis(resume_text)
         print(f"AI parsing completed for user {current_user.id}")
         
+        # Check if resume was deemed unfit
+        if "error" in result and result.get("error") == "resume_unfit":
+            # Clean up file if resume is unfit
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise HTTPException(
+                status_code=400,
+                detail="Resume is unfit or not related to a proper resume. Please upload a valid resume only."
+            )
+        
+        # Check for other errors
+        if "error" in result:
+            # Clean up file if other errors occurred
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise HTTPException(
+                status_code=400,
+                detail=result.get("message", "Failed to parse resume")
+            )
+        
+        # Extract parsed data and analysis
+        parsed_data = result.get("parsed_data", {})
+        analysis = result.get("analysis", {})
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions (our custom validation errors)
+        raise
     except Exception as e:
         # Clean up file if parsing fails
         if os.path.exists(file_path):
@@ -165,6 +207,8 @@ async def upload_resume(
     profile.resume_location = file_path
     profile.resume_text = resume_text
     profile.resume_parsed = parsed_data
+    profile.resume_remarks = analysis
+    profile.last_updated = datetime.utcnow()
     
     db.commit()
     db.refresh(profile)
@@ -177,6 +221,12 @@ async def upload_resume(
         except Exception as e:
             print(f"Failed to trigger job search: {e}")
             # Don't fail resume upload if job search scheduling fails
+    
+    return schemas.ResumeUploadResponse(
+        message="Resume uploaded and parsed successfully.",
+        filename=resume.filename,
+        status="success"
+    )
     
     return schemas.ResumeUploadResponse(
         message="Resume uploaded and parsed successfully.",

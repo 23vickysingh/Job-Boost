@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Upload, FileText, Check, AlertCircle } from "lucide-react";
 import Navbar from '@/components/Navbar';
+import ConfirmationDialog from '@/components/ui/confirmation-dialog';
 import { uploadResume } from "@/lib/api";
 
 const ResumeUpload = () => {
@@ -16,11 +17,37 @@ const ResumeUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
+  const [isValidFile, setIsValidFile] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  
+  // Confirmation dialog state
+  const [confirmationDialog, setConfirmationDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'info' | 'warning' | 'danger';
+    confirmText: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+    confirmText: 'Confirm',
+    onConfirm: () => {}
+  });
 
   const handleSkip = () => {
-    if (window.confirm('Skip resume upload? You can upload later.')) {
-      navigate('/dashboard');
-    }
+    setConfirmationDialog({
+      isOpen: true,
+      title: 'Skip Resume Upload',
+      message: 'Are you sure you want to skip resume upload? You can upload your resume later from the dashboard.',
+      type: 'warning',
+      confirmText: 'Skip',
+      onConfirm: () => {
+        navigate('/dashboard');
+      }
+    });
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -49,26 +76,56 @@ const ResumeUpload = () => {
   };
 
   const validateAndSetFile = (file: File) => {
-    // Check file type (PDF, DOCX, etc.)
+    const errors: string[] = [];
+    
+    // Check file type (PDF, DOCX only)
     const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const validExtensions = ['.pdf', '.docx'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
     
-    if (!validTypes.includes(file.type)) {
-      toast.error("Please upload a PDF or DOCX file");
+    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
+      errors.push("Please upload a PDF or DOCX file only");
+    }
+    
+    // Check file size (max 1MB)
+    const maxSize = 1 * 1024 * 1024; // 1MB in bytes
+    if (file.size > maxSize) {
+      errors.push(`File size (${(file.size / 1024 / 1024).toFixed(2)} MB) exceeds maximum allowed size of 1 MB`);
+    }
+    
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      setIsValidFile(false);
+      setFile(file); // Still set the file to show it, but mark as invalid
+      
+      // Show validation error dialog
+      setConfirmationDialog({
+        isOpen: true,
+        title: 'Invalid File',
+        message: errors.join('. '),
+        type: 'danger',
+        confirmText: 'OK',
+        onConfirm: () => {
+          // Reset file selection
+          setFile(null);
+          setValidationErrors([]);
+        }
+      });
       return;
     }
     
-    // Check file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("File size should be less than 5MB");
-      return;
-    }
-    
+    // File is valid
+    setValidationErrors([]);
+    setIsValidFile(true);
     setFile(file);
-    toast.success(`File "${file.name}" selected`);
+    toast.success(`File "${file.name}" selected and ready to upload`);
   };
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file || !isValidFile) {
+      toast.error("Please select a valid file first");
+      return;
+    }
 
     const form = new FormData();
     form.append("resume", file);
@@ -101,13 +158,48 @@ const ResumeUpload = () => {
       setUploadProgress(0);
       console.error("Resume upload failed:", error);
       
-      // Better error messaging
-      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      // Handle specific error cases
+      const errorMessage = error.response?.data?.detail || error.message || "Failed to upload resume";
+      
+      if (errorMessage.includes("resume is unfit") || errorMessage.includes("not related")) {
+        // Show unfit resume dialog
+        setConfirmationDialog({
+          isOpen: true,
+          title: 'Invalid Resume',
+          message: 'Resume is unfit or not related to a proper resume. Please upload a valid resume only.',
+          type: 'danger',
+          confirmText: 'OK',
+          onConfirm: () => {
+            // Reset the upload form
+            resetUpload();
+          }
+        });
+      } else if (errorMessage.includes("Unable to parse")) {
+        setConfirmationDialog({
+          isOpen: true,
+          title: 'Unable to Parse Resume',
+          message: 'Unable to parse the resume. Make sure to upload a relevant document only.',
+          type: 'warning',
+          confirmText: 'OK',
+          onConfirm: () => {
+            resetUpload();
+          }
+        });
+      } else if (errorMessage.includes("File size") || errorMessage.includes("File type")) {
+        setConfirmationDialog({
+          isOpen: true,
+          title: 'File Validation Error',
+          message: errorMessage,
+          type: 'warning',
+          confirmText: 'OK',
+          onConfirm: () => {
+            resetUpload();
+          }
+        });
+      } else if (error.code === 'ECONNABORTED' || errorMessage.includes('timeout')) {
         toast.error("Upload timeout. Please try again with a smaller file or check your connection.");
-      } else if (error.response?.status === 400) {
-        toast.error(error.response.data?.detail || "Invalid file format. Please upload PDF, DOC, DOCX, or TXT files.");
       } else {
-        toast.error("Failed to upload resume. Please try again.");
+        toast.error(errorMessage);
       }
     }
   };
@@ -116,6 +208,14 @@ const ResumeUpload = () => {
     setFile(null);
     setUploadProgress(0);
     setUploadComplete(false);
+    setIsValidFile(false);
+    setValidationErrors([]);
+    
+    // Clear file input
+    const fileInput = document.getElementById("resumeInput") as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
   // const doUpload = async () => {
@@ -186,7 +286,7 @@ const ResumeUpload = () => {
                     id="resumeInput"
                     type="file"
                     className="hidden"
-                    accept=".pdf,.doc,.docx"
+                    accept=".pdf,.docx"
                     onChange={handleFileChange}
                     disabled={isUploading}
                   />
@@ -194,17 +294,46 @@ const ResumeUpload = () => {
 
                 {file && (
                   <div className="mt-6">
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 flex items-start">
-                      <div className="flex-shrink-0 p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full mr-4">
-                        <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <div className={`rounded-lg p-4 flex items-start ${
+                      isValidFile 
+                        ? 'bg-gray-50 dark:bg-gray-800/50' 
+                        : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                    }`}>
+                      <div className={`flex-shrink-0 p-2 rounded-full mr-4 ${
+                        isValidFile 
+                          ? 'bg-blue-100 dark:bg-blue-900/30' 
+                          : 'bg-red-100 dark:bg-red-900/30'
+                      }`}>
+                        {isValidFile ? (
+                          <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        ) : (
+                          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 dark:text-white truncate">
+                        <p className={`font-medium truncate ${
+                          isValidFile 
+                            ? 'text-gray-900 dark:text-white' 
+                            : 'text-red-900 dark:text-red-100'
+                        }`}>
                           {file.name}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className={`text-sm ${
+                          isValidFile 
+                            ? 'text-gray-500 dark:text-gray-400' 
+                            : 'text-red-600 dark:text-red-400'
+                        }`}>
                           {(file.size / 1024 / 1024).toFixed(2)} MB
                         </p>
+                        {!isValidFile && validationErrors.length > 0 && (
+                          <div className="mt-2">
+                            {validationErrors.map((error, index) => (
+                              <p key={index} className="text-sm text-red-600 dark:text-red-400">
+                                • {error}
+                              </p>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <Button
                         variant="ghost"
@@ -217,8 +346,22 @@ const ResumeUpload = () => {
                       </Button>
                     </div>
 
+                    {isUploading && (
+                      <div className="mt-4">
+                        <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          <span>Uploading and processing...</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <Progress value={uploadProgress} className="h-2" />
+                      </div>
+                    )}
+
                     <div className="mt-6 flex justify-end">
-                      <Button onClick={handleUpload} disabled={isUploading}>
+                      <Button 
+                        onClick={handleUpload} 
+                        disabled={isUploading || !isValidFile}
+                        className={!isValidFile ? 'opacity-50 cursor-not-allowed' : ''}
+                      >
                         {isUploading ? "Uploading..." : "Upload Resume"}
                       </Button>
                     </div>
@@ -255,10 +398,10 @@ const ResumeUpload = () => {
                   </h3>
                   <div className="mt-2 text-sm text-blue-700 dark:text-blue-400">
                     <p>
-                      We support PDF and DOCX formats. For best results, make sure your resume:
+                      We support PDF and DOCX formats only. For best results, make sure your resume:
                     </p>
                     <ul className="list-disc pl-5 mt-1 space-y-1">
-                      <li>Is less than 5MB in size</li>
+                      <li>Is less than 1MB in size</li>
                       <li>Has clear section headings</li>
                       <li>Includes your skills, experience, and education</li>
                       <li>Is free from complex tables or graphics</li>
@@ -270,6 +413,17 @@ const ResumeUpload = () => {
           </div>
         </div>
       </div>
+      
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={confirmationDialog.isOpen}
+        onClose={() => setConfirmationDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmationDialog.onConfirm}
+        title={confirmationDialog.title}
+        message={confirmationDialog.message}
+        type={confirmationDialog.type}
+        confirmText={confirmationDialog.confirmText}
+      />
     </div>
   );
 };

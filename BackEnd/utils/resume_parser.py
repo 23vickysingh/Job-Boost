@@ -402,3 +402,165 @@ def format_parsed_data_for_database(parsed_data: Dict) -> Dict[str, str]:
             "achievements": data.get("achievements", ""),
             "resume_data": json.dumps(data, indent=2)
         }
+
+
+async def parse_resume_with_analysis(resume_text: str) -> Dict:
+    """Enhanced resume parser with validation and analysis."""
+    if not api_key:
+        print("No API key found, using fallback parsing")
+        return {"parsed_data": fallback_resume_parsing(resume_text), "analysis": None}
+    
+    if not resume_text.strip():
+        return {"error": "Empty resume text provided"}
+    
+    try:
+        print("Starting enhanced Gemini API resume parsing and validation...")
+        
+        # Configure the Gemini model
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        
+        # First check if the document is actually a resume
+        prompt = f"""
+        You are an expert document analyzer, resume parser and career advisor. Please analyze the following text and determine if it's a legitimate resume/CV document.
+        
+        Check for:
+        1. Personal information (name, contact details)
+        2. Professional experience or work history
+        3. Educational background
+        4. Skills section
+        5. Overall structure typical of a resume
+        
+        If this is NOT a resume or contains irrelevant content (like random text, advertisements, etc.), respond with a json exactly having parsed_data : "resume unfit"
+        
+        If this IS a legitimate resume, 
+        
+        1. Parse the resume into structured JSON format
+        2. Provide detailed analysis and feedback
+        
+        Please extract information into structured JSON with two main sections: 'parsed_data' and 'analysis'.
+        
+        The 'parsed_data' should follow this schema:
+        {{
+          "personal_info": {{
+            "name": "string",
+            "email": "string",
+            "phone": "string",
+            "linkedin": "string",
+            "github": "string",
+            "location": "string"
+          }},
+          "summary": "string",
+          "experience": [
+            {{
+              "role": "string",
+              "company": "string",
+              "dates": "string",
+              "location": "string",
+              "description": ["string"]
+            }}
+          ],
+          "education": [
+            {{
+              "degree": "string",
+              "institution": "string",
+              "dates": "string",
+              "gpa": "string",
+              "location": "string"
+            }}
+          ],
+          "skills": ["string"],
+          "projects": [
+            {{
+              "name": "string",
+              "technologies": ["string"],
+              "description": "string",
+              "dates": "string",
+              "link": "string"
+            }}
+          ],
+          "courses_undertaken": ["string"],
+          "achievements": ["string"],
+          "certifications": ["string"]
+        }}
+        
+        The 'analysis' should include:
+        {{
+          "good_points": ["List of strengths and positive aspects"],
+          "weak_points": ["List of areas that need improvement"],
+          "missing_things": ["List of important resume elements that are missing"],
+          "redundancy": ["List of redundant or unnecessary content"],
+          "improvements": ["List of specific suggestions for improvement"]
+        }}
+        
+        Return ONLY the JSON object with both 'parsed_data' and 'analysis' sections, no additional text.
+        
+        Resume text to analyze:
+        ---
+        {resume_text}
+        ---
+        """
+        
+        def sync_parse():
+            try:
+                response = model.generate_content(prompt)
+                return response.text
+            except Exception as e:
+                print(f"Gemini parsing call failed: {e}")
+                raise
+        
+        # Run parsing in thread pool with timeout
+        loop = asyncio.get_event_loop()
+        with ThreadPoolExecutor() as executor:
+            try:
+                response_text = await asyncio.wait_for(
+                    loop.run_in_executor(executor, sync_parse),
+                    timeout=90.0
+                )
+                print("Gemini API parsing completed successfully")
+            except asyncio.TimeoutError:
+                print("Gemini API call timed out, using fallback parsing")
+                return {"parsed_data": fallback_resume_parsing(resume_text), "analysis": None}
+        
+        # Clean and parse the JSON response
+        cleaned_response = response_text.strip().replace('```json', '').replace('```', '').strip()
+        
+        parsed_result = json.loads(cleaned_response)
+        
+        # Check if resume was deemed unfit
+        if isinstance(parsed_result.get("parsed_data"), str) and "resume unfit" in parsed_result.get("parsed_data", "").lower():
+            return {"error": "resume_unfit", "message": "Document is not a valid resume"}
+        
+        print("Resume parsing and analysis JSON decoded successfully")
+        return parsed_result
+        
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
+        return {
+            "error": "Failed to decode JSON from the API response.",
+            "details": str(e),
+            "raw_response": response_text[:500] + "..." if len(response_text) > 500 else response_text
+        }
+    except Exception as e:
+        print(f"Resume parsing error: {e}")
+        return {"error": f"An unexpected error occurred: {str(e)}"}
+
+
+def validate_file_constraints(file_content: bytes, filename: str) -> Dict[str, str]:
+    """Validate file size and type constraints."""
+    errors = []
+    
+    # Check file size (1 MB = 1,048,576 bytes)
+    max_size = 1 * 1024 * 1024  # 1 MB
+    if len(file_content) > max_size:
+        errors.append(f"File size ({len(file_content) / 1024 / 1024:.2f} MB) exceeds maximum allowed size of 1 MB")
+    
+    # Check file extension
+    allowed_extensions = ['.pdf', '.docx']
+    file_extension = os.path.splitext(filename)[1].lower()
+    if file_extension not in allowed_extensions:
+        errors.append(f"File type '{file_extension}' not allowed. Please upload PDF or DOCX files only")
+    
+    return {
+        "valid": len(errors) == 0,
+        "errors": errors
+    }
