@@ -16,7 +16,7 @@ api.interceptors.request.use((cfg) => {
 // Add response interceptor to handle authentication errors and retries
 api.interceptors.response.use(
   (response) => {
-    console.log(`API Success: ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
+    // console.log(`API Success: ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
     return response;
   },
   async (error) => {
@@ -26,15 +26,15 @@ api.interceptors.response.use(
     if (error.code === 'ERR_NETWORK_CHANGED' || error.code === 'NETWORK_ERROR') {
       if (!config._retry) {
         config._retry = true;
-        console.log('Retrying request due to network error...');
+        // console.log('Retrying request due to network error...');
         // Wait 1 second before retry
         await new Promise(resolve => setTimeout(resolve, 1000));
         return api(config);
       }
     }
     
-    console.error(`API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || 'Network Error'}`);
-    console.error('Error details:', error.message);
+    // console.error(`API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || 'Network Error'}`);
+    // console.error('Error details:', error.message);
     
     if (error.response?.status === 401) {
       // Clear token and redirect to login
@@ -47,7 +47,7 @@ api.interceptors.response.use(
 
 export default api;
 
-/* Convenience wrappers */
+// /* Convenience wrappers */
 export const register = (email: string, password: string) =>
   api.post("/user/register", { user_id: email, password });
 

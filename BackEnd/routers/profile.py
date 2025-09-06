@@ -15,10 +15,9 @@ router = APIRouter(prefix="/profile", tags=["Profile"])
 
 
 def _get_or_create_profile(db: Session, user: models.User) -> models.UserProfile:
-    """
-    Retrieves a user's profile from the database. If a profile does not exist,
-    it creates a new one.
-    """
+
+    # Retrieves a user's profile from the database. If a profile does not exist, create a new one.
+    
     profile = (
         db.query(models.UserProfile).filter(models.UserProfile.user_id == user.id).first()
     )

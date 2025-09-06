@@ -16,24 +16,24 @@ router = APIRouter(prefix="/user", tags=["User"])
 otp_service = OTPService()
 email_service = EmailService()
 
-@router.post("/debug-reset-password")
-async def debug_reset_password(request: Request):
-    """Debug endpoint to see raw request"""
-    body = await request.body()
-    print(f"Raw body: {body}")
-    try:
-        import json
-        data = json.loads(body)
-        print(f"Parsed JSON: {data}")
-    except:
-        print("Failed to parse JSON")
-    return {"message": "debug complete"}
+# @router.post("/debug-reset-password")
+# async def debug_reset_password(request: Request):
+#     """Debug endpoint to see raw request"""
+#     body = await request.body()
+#     print(f"Raw body: {body}")
+#     try:
+#         import json
+#         data = json.loads(body)
+#         print(f"Parsed JSON: {data}")
+#     except:
+#         print("Failed to parse JSON")
+#     return {"message": "debug complete"}
 
 
 @router.post("/request-registration")
 def request_registration(request: schemas.RegistrationRequest, db: Session = Depends(get_db)):
     if db.query(models.User).filter(models.User.user_id == request.user_id).first():
-        raise HTTPException(status_code=400, detail="User ID already registered")
+        raise HTTPException(status_code=400, detail="user exists")
 
     otp = otp_service.generate_otp()
     
@@ -42,7 +42,7 @@ def request_registration(request: schemas.RegistrationRequest, db: Session = Dep
         "password": Hash.bcrypt(request.password)
     }
     
-    otp_service.store_otp(request.user_id, otp, "registration", ttl_minutes=10, 
+    otp_service.store_otp(request.user_id, otp, "registration", ttl_minutes=5, 
                          additional_data=registration_data)
     
     print("your otp for current session is", otp)
@@ -62,7 +62,6 @@ def confirm_registration(request: schemas.RegistrationVerify, db: Session = Depe
     if db.query(models.User).filter(models.User.user_id == request.user_id).first():
         raise HTTPException(status_code=400, detail="User ID already registered")
 
-    # Get password from stored data
     password = stored_data.get("password")
     if not password:
         raise HTTPException(status_code=400, detail="Registration data not found")
@@ -111,7 +110,6 @@ def verify_otp(request: schemas.RegistrationVerify, db: Session = Depends(get_db
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Check if OTP is valid without consuming it
     if not otp_service.is_otp_valid(request.user_id, request.otp, "password_reset"):
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
@@ -125,14 +123,12 @@ def reset_password(request: schemas.PasswordUpdate, db: Session = Depends(get_db
     print(f"Request OTP: {request.otp}")
     print(f"Request has password: {bool(request.password)}")
     
-    # Find user
     user = db.query(models.User).filter(models.User.user_id == request.user_id).first()
     if not user:
         print(f"User not found: {request.user_id}")
         raise HTTPException(status_code=404, detail="User not found")
     print(f"User found: {user.user_id}")
 
-    # Verify and consume OTP in one step
     print(f"Verifying OTP for user: {request.user_id}")
     stored_data = otp_service.verify_otp(request.user_id, request.otp, "password_reset")
     if stored_data is None:
@@ -141,7 +137,6 @@ def reset_password(request: schemas.PasswordUpdate, db: Session = Depends(get_db
     
     print(f"OTP verified successfully for user: {request.user_id}")
 
-    # Update password
     print(f"Updating password for user: {request.user_id}")
     user.password = Hash.bcrypt(request.password)
     db.commit()

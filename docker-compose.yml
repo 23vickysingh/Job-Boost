@@ -23,41 +23,41 @@ services:
         condition: service_started
 
   # The Celery worker service
-  worker:
-    build:
-      context: ./BackEnd
-      dockerfile: Dockerfile # Use the same Dockerfile as the 'app' service
-    container_name: job-boost-worker
-    command: celery -A tasks.celery_app.app worker --loglevel=info
-    working_dir: /app 
-    environment:
-      - PYTHONPATH=/app
-    volumes:
-      - ./BackEnd:/app
-    env_file:
-      - ./.env
-    depends_on:
-      - redis
-      - postgres
+  # worker:
+  #   build:
+  #     context: ./BackEnd
+  #     dockerfile: Dockerfile # Use the same Dockerfile as the 'app' service
+  #   container_name: job-boost-worker
+  #   command: celery -A tasks.celery_app.app worker --loglevel=info
+  #   working_dir: /app 
+  #   environment:
+  #     - PYTHONPATH=/app
+  #   volumes:
+  #     - ./BackEnd:/app
+  #   env_file:
+  #     - ./.env
+  #   depends_on:
+  #     - redis
+  #     - postgres
 
   # The Celery beat scheduler service
-  beat:
-    build:
-      context: ./BackEnd
-      dockerfile: Dockerfile # Use the same Dockerfile as the 'app' service
-    container_name: job-boost-beat
-    command: celery -A tasks.celery_app.app beat --loglevel=info -s /app/celery_data/celerybeat-schedule
-    working_dir: /app 
-    environment:
-      - PYTHONPATH=/app
-    volumes:
-      - ./BackEnd:/app
-      - celery_data:/app/celery_data # FIX: Mount a named volume for persistent data
-    env_file:
-      - ./.env
-    depends_on:
-      - redis
-      - postgres
+  # beat:
+  #   build:
+  #     context: ./BackEnd
+  #     dockerfile: Dockerfile # Use the same Dockerfile as the 'app' service
+  #   container_name: job-boost-beat
+  #   command: celery -A tasks.celery_app.app beat --loglevel=info -s /app/celery_data/celerybeat-schedule
+  #   working_dir: /app 
+  #   environment:
+  #     - PYTHONPATH=/app
+  #   volumes:
+  #     - ./BackEnd:/app
+  #     - celery_data:/app/celery_data # FIX: Mount a named volume for persistent data
+  #   env_file:
+  #     - ./.env
+  #   depends_on:
+  #     - redis
+  #     - postgres
 
   # Frontend Service (React + Vite Dev Server)
   frontend:
@@ -102,4 +102,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  celery_data: {} # FIX: Define the named volume for Celery Beat
+  # celery_data: {}

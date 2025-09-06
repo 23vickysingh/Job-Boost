@@ -5,17 +5,21 @@ import enum
 
 from database import Base
 
+# used for status fields in Contact and JobMatch models
 
 class ContactStatus(enum.Enum):
     pending = "pending"
     resolved = "resolved"
 
-
 class JobMatchStatus(enum.Enum):
     pending = "pending"
     applied = "applied"
-    not_interested = "not_interested"
 
+
+
+
+
+# main tables models
 
 class User(Base):
     __tablename__ = "users"
@@ -25,7 +29,10 @@ class User(Base):
     password = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # created a one-to-one relationship with UserProfile
     profile = relationship("UserProfile", back_populates="user", uselist=False)
+
+    # created a one-to-many relationship with JobMatch
     job_matches = relationship("JobMatch", back_populates="user", cascade="all, delete-orphan")
 
 
@@ -45,7 +52,9 @@ class UserProfile(Base):
     resume_text = Column(Text, nullable=True)  # Raw extracted text from resume
     resume_parsed = Column(JSON, nullable=True)  # Processed/structured data from Gemini AI
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    preferences_set = Column(Boolean, default=False)  # Flag to indicate if preferences are set
 
+    # created the relationship back to User
     user = relationship("User", back_populates="profile")
 
 
@@ -79,7 +88,7 @@ class Job(Base):
     # Store the full, raw API response for future use or debugging
     job_api_response = Column(JSON, nullable=True)
     
-    # New relationship to JobMatch
+    # created a one-to-many relationship with JobMatch
     matches = relationship("JobMatch", back_populates="job", cascade="all, delete-orphan")
 
 

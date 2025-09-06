@@ -7,6 +7,7 @@ import AuthForm from '@/components/AuthForm';
 import SignupOtpForm from '@/components/signup/OtpForm';
 import { useAuth } from "@/contexts/AuthContext";
 import { requestRegistration, confirmRegistration } from '@/lib/api';
+import { isValidEmail, getEmailErrorMessage } from '@/lib/validation';
 
 const SignUp = () => {
   const { login } = useAuth();
@@ -14,18 +15,38 @@ const SignUp = () => {
   const [step, setStep] = useState<'form' | 'otp'>('form');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirm: ''
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (isLoading) return; // Prevent multiple submissions
+    
     const fd = new FormData(e.currentTarget);
     const em = fd.get("email") as string;
     const pw = fd.get("password") as string;
     const confirm = fd.get("confirm") as string;
 
+    // Update form data to preserve values
+    setFormData({ email: em, password: pw, confirm });
+
+    // Validate email format
+    if (!isValidEmail(em)) {
+      toast.error(getEmailErrorMessage(em));
+      return;
+    }
+
     if (pw !== confirm) {
       toast.error("Passwords do not match");
       return;
     }
+
+    setIsLoading(true);
     try {
       await requestRegistration(em, pw);
       setEmail(em);
@@ -34,6 +55,8 @@ const SignUp = () => {
       setStep('otp');
     } catch {
       toast.error('Unable to register');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -51,11 +74,17 @@ const SignUp = () => {
   const handleExpire = () => {
     toast.error('OTP expired. Please sign up again');
     setStep('form');
+    setFormData({ email: '', password: '', confirm: '' }); // Reset form when OTP expires
   };
 
   const renderStep = () => {
     return step === 'form' ? (
-      <AuthForm type="signup" onSubmit={handleSubmit} />
+      <AuthForm 
+        type="signup" 
+        onSubmit={handleSubmit} 
+        defaultValues={formData}
+        isLoading={isLoading}
+      />
     ) : (
       <SignupOtpForm onSubmit={handleOtp} onExpire={handleExpire} />
     );

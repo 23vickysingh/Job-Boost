@@ -8,9 +8,15 @@ import { Label } from "@/components/ui/label";
 interface AuthFormProps {
   type: 'signin' | 'signup';
   onSubmit: (e: React.FormEvent) => void;
+  defaultValues?: {
+    email?: string;
+    password?: string;
+    confirm?: string;
+  };
+  isLoading?: boolean;
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
+const AuthForm = ({ type, onSubmit, defaultValues, isLoading }: AuthFormProps) => {
   const isSignIn = type === 'signin';
 
   return (
@@ -30,7 +36,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
 
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" name='email' type="email" placeholder="your@email.com" required />
+          <Input 
+            id="email" 
+            name='email' 
+            type="email" 
+            placeholder="your@email.com" 
+            defaultValue={defaultValues?.email || ''}
+            required 
+          />
         </div>
 
         <div className="space-y-2">
@@ -45,18 +58,30 @@ const AuthForm: React.FC<AuthFormProps> = ({ type, onSubmit }) => {
               </Link>
             )}
           </div>
-          <Input id="password" name='password' type="password" required />
+          <Input 
+            id="password" 
+            name='password' 
+            type="password" 
+            defaultValue={defaultValues?.password || ''}
+            required 
+          />
         </div>
 
         {!isSignIn && (
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input id="confirmPassword" name='confirm' type="password" required />
+            <Input 
+              id="confirmPassword" 
+              name='confirm' 
+              type="password" 
+              defaultValue={defaultValues?.confirm || ''}
+              required 
+            />
           </div>
         )}
 
-        <Button type="submit" className="w-full">
-          {isSignIn ? 'Sign In' : 'Sign Up'}
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? 'Signing In...' : (isSignIn ? 'Sign In' : 'Sign Up')}
         </Button>
       </form>
 
