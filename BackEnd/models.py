@@ -14,6 +14,7 @@ class ContactStatus(enum.Enum):
 class JobMatchStatus(enum.Enum):
     pending = "pending"
     applied = "applied"
+    not_interested = "not interested"
 
 
 
