@@ -6,6 +6,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Plus, 
   Check, 
@@ -18,8 +26,8 @@ import {
   X,
   CheckCircle
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchJobMatches, updateJobMatchStatus } from "@/lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchJobMatches, updateJobMatchStatus, deleteJobMatch } from "@/lib/api";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { useJobs, type JobMatch } from "@/contexts/JobContext";
 import { toast } from "sonner";
@@ -27,6 +35,13 @@ import { toast } from "sonner";
 const JobMatchesList: React.FC = () => {
   // Get job management functions from context
   const { addToApplications, removeJobMatch, isJobApplied, isJobRemoved } = useJobs();
+  
+  // State for confirmation dialog
+  const [showNotInterestedDialog, setShowNotInterestedDialog] = useState(false);
+  const [selectedJobMatch, setSelectedJobMatch] = useState<JobMatch | null>(null);
+  
+  // Get query client for cache invalidation
+  const queryClient = useQueryClient();
   
   // Fetch job matches from API
   const { data: jobMatchesResponse, error } = useQuery({
@@ -85,9 +100,11 @@ const JobMatchesList: React.FC = () => {
   const handleMoveToApplications = async (jobMatch: JobMatch) => {
     try {
       await addToApplications(jobMatch);
+      // Invalidate and refetch related queries
+      queryClient.invalidateQueries({ queryKey: ["jobMatches"] });
+      queryClient.invalidateQueries({ queryKey: ["jobMatchStats"] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
       toast.success("Job moved to applications successfully!");
-      // Refresh the job matches to update the UI
-      window.location.reload(); // Simple refresh - you could implement more sophisticated state management
     } catch (error) {
       console.error('Failed to move job to applications:', error);
       toast.error("Failed to move job to applications. Please try again.");
@@ -95,15 +112,27 @@ const JobMatchesList: React.FC = () => {
   };
 
   // Handler for removing job from matches
-  const handleNotInterested = async (jobMatchId: number) => {
+  const handleNotInterested = (jobMatch: JobMatch) => {
+    setSelectedJobMatch(jobMatch);
+    setShowNotInterestedDialog(true);
+  };
+
+  // Handler for confirming not interested action
+  const handleConfirmNotInterested = async () => {
+    if (!selectedJobMatch) return;
+    
     try {
-      await updateJobMatchStatus(jobMatchId, 'not_interested');
-      toast.success("Job marked as not interested");
-      // Refresh the job matches to update the UI
-      window.location.reload(); // Simple refresh - you could implement more sophisticated state management
+      await deleteJobMatch(selectedJobMatch.id);
+      // Invalidate and refetch job matches
+      queryClient.invalidateQueries({ queryKey: ["jobMatches"] });
+      queryClient.invalidateQueries({ queryKey: ["jobMatchStats"] });
+      toast.success("Job removed successfully. It won't be shown again.");
     } catch (error) {
-      console.error('Failed to update job status:', error);
-      toast.error("Failed to update job status. Please try again.");
+      console.error('Failed to remove job:', error);
+      toast.error("Failed to remove job. Please try again.");
+    } finally {
+      setShowNotInterestedDialog(false);
+      setSelectedJobMatch(null);
     }
   };
 
@@ -255,7 +284,7 @@ const JobMatchesList: React.FC = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleNotInterested(match.id)}
+                        onClick={() => handleNotInterested(match)}
                         className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                       >
                         <X className="mr-1 h-3 w-3" />
@@ -278,6 +307,38 @@ const JobMatchesList: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Not Interested Confirmation Dialog */}
+      <Dialog open={showNotInterestedDialog} onOpenChange={setShowNotInterestedDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Job Match</DialogTitle>
+            <DialogDescription>
+              This job won't be shown again. Are you sure you want to mark this job as not interested?
+            </DialogDescription>
+          </DialogHeader>
+          {selectedJobMatch && (
+            <div className="py-4">
+              <p className="font-medium">{selectedJobMatch.job.job_title}</p>
+              <p className="text-sm text-gray-600">{selectedJobMatch.job.employer_name}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowNotInterestedDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleConfirmNotInterested}
+            >
+              Confirm Not Interested
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

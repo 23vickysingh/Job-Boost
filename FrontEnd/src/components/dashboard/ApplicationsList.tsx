@@ -9,8 +9,16 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { FileText, X } from "lucide-react";
-import { fetchApplications, updateJobMatchStatus } from "@/lib/api";
+import { fetchApplications, updateJobMatchStatus, deleteJobMatch } from "@/lib/api";
 import { toast } from "sonner";
 
 interface Job {
@@ -40,6 +48,10 @@ interface Application {
 const ApplicationsList: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [error, setError] = useState<string | null>(null);
+  
+  // State for confirmation dialog
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
 
   // Fetch applications from API
   useEffect(() => {
@@ -61,15 +73,26 @@ const ApplicationsList: React.FC = () => {
   }, []);
 
   // Handler for closing an application
-  const handleCloseApplication = async (applicationId: number) => {
+  const handleCloseApplication = (application: Application) => {
+    setSelectedApplication(application);
+    setShowCloseDialog(true);
+  };
+
+  // Handler for confirming close application action
+  const handleConfirmCloseApplication = async () => {
+    if (!selectedApplication) return;
+    
     try {
-      await updateJobMatchStatus(applicationId, 'not_interested');
+      await deleteJobMatch(selectedApplication.id);
       // Remove from local state
-      setApplications(prev => prev.filter(app => app.id !== applicationId));
-      toast.success("Application closed successfully!");
+      setApplications(prev => prev.filter(app => app.id !== selectedApplication.id));
+      toast.success("Application closed and removed successfully!");
     } catch (error) {
       console.error('Error closing application:', error);
       toast.error("Failed to close application");
+    } finally {
+      setShowCloseDialog(false);
+      setSelectedApplication(null);
     }
   };
 
@@ -154,7 +177,7 @@ const ApplicationsList: React.FC = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => handleCloseApplication(app.id)}
+                      onClick={() => handleCloseApplication(app)}
                       className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                     >
                       <X className="mr-1 h-3 w-3" />
@@ -167,6 +190,38 @@ const ApplicationsList: React.FC = () => {
           </table>
         </div>
       )}
+
+      {/* Close Application Confirmation Dialog */}
+      <Dialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Close Job Application</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to close this job application? This action will remove it completely and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedApplication && (
+            <div className="py-4">
+              <p className="font-medium">{selectedApplication.job.job_title}</p>
+              <p className="text-sm text-gray-600">{selectedApplication.job.employer_name}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCloseDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleConfirmCloseApplication}
+            >
+              Close Application
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

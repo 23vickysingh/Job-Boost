@@ -117,6 +117,9 @@ export const fetchJobMatch = (matchId: number) => api.get(`/jobs/matches/${match
 export const updateJobMatchStatus = (matchId: number, status: string) =>
   api.put(`/jobs/matches/${matchId}/status?status=${status}`);
 
+export const deleteJobMatch = (matchId: number) =>
+  api.delete(`/jobs/matches/${matchId}`);
+
 export const fetchApplications = (params?: { limit?: number; offset?: number }) =>
   api.get("/jobs/applications", { params });
 

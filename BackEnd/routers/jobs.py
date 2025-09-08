@@ -162,6 +162,33 @@ async def update_job_match_status(
     }
 
 
+@router.delete("/matches/{match_id}")
+async def delete_job_match(
+    match_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Delete a job match completely from the database."""
+    
+    # Find the job match
+    job_match = db.query(models.JobMatch).filter(
+        models.JobMatch.id == match_id,
+        models.JobMatch.user_id == current_user.id
+    ).first()
+    
+    if not job_match:
+        raise HTTPException(status_code=404, detail="Job match not found")
+    
+    # Delete the job match
+    db.delete(job_match)
+    db.commit()
+    
+    return {
+        "message": "Job match deleted successfully",
+        "match_id": match_id
+    }
+
+
 @router.get("/applications", response_model=List[schemas.JobMatchOut])
 async def get_applications(
     limit: Optional[int] = 50,

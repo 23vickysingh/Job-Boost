@@ -602,7 +602,7 @@ const Dashboard = () => {
             
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {/* Profile Status Card - Keep as is */}
+              {/* Profile Status Card */}
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center">
@@ -611,8 +611,16 @@ const Dashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-500">Profile Status</p>
-                      <p className="text-2xl font-semibold text-gray-900">
-                        {profile?.preferences_set ? 'Complete' : 'Incomplete'}
+                      <p className="text-xl font-semibold text-gray-900">
+                        {(() => {
+                          const hasResume = profile?.resume_url || profile?.parsed_resume_data;
+                          const hasPreferences = profile?.preferences_set;
+                          
+                          if (!hasResume && !hasPreferences) return 'Incomplete';
+                          if (!hasResume) return 'No Resume Found';
+                          if (!hasPreferences) return 'Preferences Not set';
+                          return 'Complete';
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -628,7 +636,7 @@ const Dashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-500">Jobs Matched</p>
-                      <p className="text-2xl font-semibold text-gray-900">
+                      <p className="text-xl font-semibold text-gray-900">
                         {totalMatches}
                       </p>
                       <p className="text-xs text-gray-500">
@@ -648,7 +656,7 @@ const Dashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-500">High Relevance Jobs</p>
-                      <p className="text-2xl font-semibold text-gray-900">
+                      <p className="text-xl font-semibold text-gray-900">
                         {highRelevanceJobs}
                       </p>
                       <p className="text-xs text-gray-500">
@@ -668,7 +676,7 @@ const Dashboard = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-500">Applications</p>
-                      <p className="text-2xl font-semibold text-gray-900">
+                      <p className="text-xl font-semibold text-gray-900">
                         {appliedJobs}
                       </p>
                       <p className="text-xs text-gray-500">
@@ -719,7 +727,7 @@ const Dashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <div className="h-96 overflow-y-auto">
+                  <div className="h-[28rem] overflow-y-auto">
                     {portfolioTab === "profile" && <ProfileSection />}
                     {portfolioTab === "resume" && <ResumeSection />}
                     {portfolioTab === "remarks" && <RemarksSection />}
@@ -755,7 +763,7 @@ const Dashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <div className="h-96 overflow-y-auto">
+                  <div className="h-[28rem] overflow-y-auto">
                     {activeTab === "matches" && <JobMatchesList />}
                     {activeTab === "applications" && <ApplicationsList />}
                   </div>
