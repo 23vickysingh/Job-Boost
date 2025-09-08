@@ -56,19 +56,19 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
     switch (type) {
       case 'danger':
         return {
-          titleColor: 'text-red-600 dark:text-red-400',
+          titleColor: 'text-red-600',
           confirmButton: 'bg-red-600 hover:bg-red-700 focus:ring-red-500 text-white',
           iconColor: 'text-red-500'
         };
       case 'warning':
         return {
-          titleColor: 'text-amber-600 dark:text-amber-400',
+          titleColor: 'text-amber-600',
           confirmButton: 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500 text-white',
           iconColor: 'text-amber-500'
         };
       default:
         return {
-          titleColor: 'text-blue-600 dark:text-blue-400',
+          titleColor: 'text-blue-600',
           confirmButton: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 text-white',
           iconColor: 'text-blue-500'
         };

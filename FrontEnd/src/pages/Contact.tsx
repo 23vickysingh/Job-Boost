@@ -31,6 +31,18 @@ const Contact = () => {
     setFormData(prev => ({ ...prev, contact_type: value }));
   };
 
+  const handleNewMessage = () => {
+    // Reset both submission state and form data
+    setIsSubmitted(false);
+    setFormData({
+      name: '',
+      email: '',
+      subject: '',
+      message: '',
+      contact_type: ''
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -44,6 +56,14 @@ const Contact = () => {
     try {
       await submitContactForm(formData);
       setIsSubmitted(true);
+      // Clear form data after successful submission
+      setFormData({
+        name: '',
+        email: '',
+        subject: '',
+        message: '',
+        contact_type: ''
+      });
       toast.success("Thank you for contacting us! We'll get back to you soon.");
     } catch (error) {
       console.error("Contact form submission error:", error);
@@ -93,7 +113,7 @@ const Contact = () => {
                       Back to Home
                     </Button>
                   </Link>
-                  <Button onClick={() => setIsSubmitted(false)}>
+                  <Button onClick={handleNewMessage}>
                     Submit Another Message
                   </Button>
                 </div>
@@ -212,7 +232,7 @@ const Contact = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="contact_type">Type of Inquiry *</Label>
-                      <Select onValueChange={handleSelectChange} required>
+                      <Select value={formData.contact_type} onValueChange={handleSelectChange} required>
                         <SelectTrigger>
                           <SelectValue placeholder="Select the type of your inquiry" />
                         </SelectTrigger>

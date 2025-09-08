@@ -240,8 +240,8 @@ const ResumeUpload = () => {
       <div className="flex-1 hero-gradient py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto animate-fade-up">
           <div className="text-center mb-10">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Upload Your Resume</h1>
-            <p className="mt-3 text-lg text-gray-600 dark:text-gray-300">
+            <h1 className="text-3xl font-bold text-gray-900">Upload Your Resume</h1>
+            <p className="mt-3 text-lg text-gray-600">
               Let our AI analyze your resume and find the perfect job matches for you
             </p>
             <Button variant="ghost" onClick={handleSkip} className="mt-4">Skip for now</Button>
@@ -253,8 +253,8 @@ const ResumeUpload = () => {
                 <div
                   className={`border-2 border-dashed rounded-lg p-10 text-center transition-colors ${
                     isDragging
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                      : "border-gray-300 dark:border-gray-700"
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-300"
                   }`}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
@@ -265,14 +265,14 @@ const ResumeUpload = () => {
                       className={`h-12 w-12 ${
                         isDragging
                           ? "text-blue-500"
-                          : "text-gray-400 dark:text-gray-500"
+                          : "text-gray-400"
                       }`}
                     />
                   </div>
                   <p className="text-lg font-medium mb-2">
                     {isDragging ? "Drop your file here" : "Drag and drop your resume here"}
                   </p>
-                  <p className="text-gray-500 dark:text-gray-400 mb-4">
+                  <p className="text-gray-500 mb-4">
                     or browse from your computer
                   </p>
                   <Button
@@ -296,39 +296,39 @@ const ResumeUpload = () => {
                   <div className="mt-6">
                     <div className={`rounded-lg p-4 flex items-start ${
                       isValidFile 
-                        ? 'bg-gray-50 dark:bg-gray-800/50' 
-                        : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                        ? 'bg-gray-50' 
+                        : 'bg-red-50 border border-red-200'
                     }`}>
                       <div className={`flex-shrink-0 p-2 rounded-full mr-4 ${
                         isValidFile 
-                          ? 'bg-blue-100 dark:bg-blue-900/30' 
-                          : 'bg-red-100 dark:bg-red-900/30'
+                          ? 'bg-blue-100' 
+                          : 'bg-red-100'
                       }`}>
                         {isValidFile ? (
-                          <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          <FileText className="h-5 w-5 text-blue-600" />
                         ) : (
-                          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                          <AlertCircle className="h-5 w-5 text-red-600" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={`font-medium truncate ${
                           isValidFile 
-                            ? 'text-gray-900 dark:text-white' 
-                            : 'text-red-900 dark:text-red-100'
+                            ? 'text-gray-900' 
+                            : 'text-red-900'
                         }`}>
                           {file.name}
                         </p>
                         <p className={`text-sm ${
                           isValidFile 
-                            ? 'text-gray-500 dark:text-gray-400' 
-                            : 'text-red-600 dark:text-red-400'
+                            ? 'text-gray-500' 
+                            : 'text-red-600'
                         }`}>
                           {(file.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                         {!isValidFile && validationErrors.length > 0 && (
                           <div className="mt-2">
                             {validationErrors.map((error, index) => (
-                              <p key={index} className="text-sm text-red-600 dark:text-red-400">
+                              <p key={index} className="text-sm text-red-600">
                                 • {error}
                               </p>
                             ))}
@@ -338,7 +338,7 @@ const ResumeUpload = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-600 hover:text-red-700 dark:text-red-400"
+                        className="text-red-600 hover:text-red-700"
                         onClick={resetUpload}
                         disabled={isUploading}
                       >
@@ -348,7 +348,7 @@ const ResumeUpload = () => {
 
                     {isUploading && (
                       <div className="mt-4">
-                        <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        <div className="flex justify-between text-sm text-gray-600 mb-2">
                           <span>Uploading and processing...</span>
                           <span>{uploadProgress}%</span>
                         </div>
@@ -371,15 +371,15 @@ const ResumeUpload = () => {
             ) : (
               <div className="text-center py-8">
                 <div className="mx-auto flex justify-center mb-4">
-                  <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-3">
-                    <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
+                  <div className="rounded-full bg-green-100 p-3">
+                    <Check className="h-8 w-8 text-green-600" />
                   </div>
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Resume Uploaded Successfully!</h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                <p className="text-gray-600 mb-6">
                   Our AI is analyzing your resume and finding the best job matches for you.
                 </p>
-                <p className="text-blue-600 dark:text-blue-400">
+                <p className="text-blue-600">
                   Redirecting to dashboard...
                 </p>
               </div>
@@ -387,16 +387,16 @@ const ResumeUpload = () => {
           </Card>
 
           <div className="mt-8">
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-800">
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <AlertCircle className="h-5 w-5 text-blue-600" />
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                  <h3 className="text-sm font-medium text-blue-800">
                     Supported File Formats
                   </h3>
-                  <div className="mt-2 text-sm text-blue-700 dark:text-blue-400">
+                  <div className="mt-2 text-sm text-blue-700">
                     <p>
                       We support PDF and DOCX formats only. For best results, make sure your resume:
                     </p>
