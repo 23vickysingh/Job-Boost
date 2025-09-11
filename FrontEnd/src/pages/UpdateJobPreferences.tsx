@@ -83,7 +83,7 @@ const UpdateJobPreferences = () => {
             company_types: res.data.company_types || [],
             job_requirements: res.data.job_requirements || ''
           });
-          setHasResume(!!res.data.resume_location);
+          setHasResume(!!res.data.has_resume);
         }
       })
       .catch((error) => {

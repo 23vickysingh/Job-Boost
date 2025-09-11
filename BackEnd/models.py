@@ -54,6 +54,7 @@ class UserProfile(Base):
     resume_parsed = Column(JSON, nullable=True)  # Processed/structured data from Gemini AI
     resume_remarks = Column(JSON, nullable=True)  # AI analysis with good points, weak points, etc.
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_job_searched = Column(DateTime, nullable=True)  # Track last time job search was performed
     preferences_set = Column(Boolean, default=False)  # Flag to indicate if preferences are set
 
     # created the relationship back to User

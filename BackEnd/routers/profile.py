@@ -107,7 +107,27 @@ async def create_job_preferences(
     # if profile.preferences_set and profile.query and profile.query.strip():
     #     find_and_match_jobs_for_user.delay(current_user.id)
 
-    return profile
+    # Create response with resume status
+    profile_dict = {
+        "id": profile.id,
+        "user_id": profile.user_id,
+        "query": profile.query,
+        "location": profile.location,
+        "mode_of_job": profile.mode_of_job,
+        "work_experience": profile.work_experience,
+        "employment_types": profile.employment_types or [],
+        "company_types": profile.company_types or [],
+        "job_requirements": profile.job_requirements,
+        "resume_location": profile.resume_location,
+        "resume_text": profile.resume_text,
+        "resume_parsed": profile.resume_parsed,
+        "resume_remarks": profile.resume_remarks,
+        "last_updated": profile.last_updated,
+        "preferences_set": profile.preferences_set,
+        "has_resume": bool(profile.resume_parsed)  # Check if resume is uploaded and parsed
+    }
+
+    return schemas.UserProfileOut(**profile_dict)
 
 
 @router.post("/upload-resume", response_model=schemas.ResumeUploadResponse)
@@ -242,7 +262,28 @@ async def get_profile(
 ):
     """Get user profile."""
     profile = _get_or_create_profile(db, current_user)
-    return profile
+    
+    # Create response with resume status
+    profile_dict = {
+        "id": profile.id,
+        "user_id": profile.user_id,
+        "query": profile.query,
+        "location": profile.location,
+        "mode_of_job": profile.mode_of_job,
+        "work_experience": profile.work_experience,
+        "employment_types": profile.employment_types or [],
+        "company_types": profile.company_types or [],
+        "job_requirements": profile.job_requirements,
+        "resume_location": profile.resume_location,
+        "resume_text": profile.resume_text,
+        "resume_parsed": profile.resume_parsed,
+        "resume_remarks": profile.resume_remarks,
+        "last_updated": profile.last_updated,
+        "preferences_set": profile.preferences_set,
+        "has_resume": bool(profile.resume_parsed)  # Check if resume is uploaded and parsed
+    }
+    
+    return schemas.UserProfileOut(**profile_dict)
 
 
 @router.get("/resume-status")

@@ -138,6 +138,7 @@ class UserProfileOut(UserProfileBase):
     user_id: int
     last_updated: datetime
     preferences_set: bool
+    has_resume: bool = False  # Add resume status indicator
     
     class Config:
         from_attributes = True
@@ -243,6 +244,17 @@ class DashboardStats(BaseModel):
     high_relevance_jobs: int 
     recent_matches: int
     applied_jobs: int
+
+
+class DashboardResponse(BaseModel):
+    status: str  # "incomplete_profile", "searching", "ready"
+    message: str
+    needs_preferences: bool
+    needs_resume: bool
+    job_search_status: str  # "not_started", "in_progress", "completed"
+    search_reason: Optional[str] = None  # "first_time", "outdated", "recent"
+    last_job_searched: Optional[str] = None
+    dashboard_stats: Optional[DashboardStats] = None
 
 
 # ---------------- Job Relevance Schemas ----------------

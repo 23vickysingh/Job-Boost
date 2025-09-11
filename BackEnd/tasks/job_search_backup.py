@@ -1,5 +1,4 @@
 import time
-from datetime import datetime
 import random
 import asyncio
 import models
@@ -174,13 +173,6 @@ def find_and_match_jobs_for_user(self, user_id: int):
             # Respect API rate limits
             time.sleep(1) 
 
-        # Update the user's last_job_searched timestamp after successful completion
-        from datetime import datetime
-        user.profile.last_job_searched = datetime.utcnow()
-        db.commit()
-        
-        print(f"Job search completed for user {user_id}. Updated last_job_searched timestamp.")
-        
         return {
             "status": "success", 
             "message": f"Completed job search for user {user_id}. Processed {new_jobs_processed} new jobs.",
@@ -190,17 +182,6 @@ def find_and_match_jobs_for_user(self, user_id: int):
     except Exception as e:
         print(f"FATAL ERROR for user {user_id}: {e}")
         db.rollback() # Rollback any partial database changes
-        
-        # Reset last_job_searched if there was an error to prevent infinite loops
-        try:
-            user = db.query(models.User).filter(models.User.id == user_id).first()
-            if user and user.profile:
-                # Don't update last_job_searched on error, so it will retry later
-                # This prevents infinite loops while still allowing retry attempts
-                print(f"Error occurred, leaving last_job_searched unchanged for retry attempts")
-        except Exception as reset_error:
-            print(f"Error resetting user state: {reset_error}")
-        
         # self.retry(exc=e, countdown=600) # Optional: retry the whole task after 10 minutes
         return {"status": "error", "message": f"Fatal error: {str(e)}"}
     finally:
@@ -235,3 +216,33 @@ def await_calculate_relevance_score(resume_data, job_description, job_title, job
         print(f"Error calculating relevance score: {e}, using fallback")
         # Fallback to a basic score based on job presence
         return random.uniform(0.25, 0.65)
+                    print(f"Error calculating relevance score: {e}, using fallback")
+                    # Fallback to a basic score based on job presence
+                    relevance_score = random.uniform(0.25, 0.65)
+            else:
+                print(f"Missing resume data or job description for relevance calculation")
+                relevance_score = 0.15  # Minimum score for incomplete data
+
+            # Step 5: Save the match and score to the 'job_matches' table
+            job_match = models.JobMatch(
+                user_id=user.id,
+                job_id=new_job.id,
+                relevance_score=relevance_score
+            )
+            db.add(job_match)
+            db.commit()
+            
+            new_jobs_processed += 1
+            print(f"Processed and matched new job '{new_job.job_title}' for user {user_id} with score {relevance_score}")
+            
+            # Respect API rate limits
+            time.sleep(1) 
+
+        return f"Completed job search for user {user_id}. Processed {new_jobs_processed} new jobs."
+
+    except Exception as e:
+        print(f"FATAL ERROR for user {user_id}: {e}")
+        db.rollback() # Rollback any partial database changes
+        # self.retry(exc=e, countdown=600) # Optional: retry the whole task after 10 minutes
+    finally:
+        db.close()

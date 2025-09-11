@@ -112,6 +112,9 @@ export const fetchJobMatches = (params?: { limit?: number; offset?: number; min_
 
 export const fetchJobMatchStats = () => api.get("/jobs/matches/stats");
 
+// Dashboard API
+export const fetchDashboardData = () => api.get("/jobs/dashboard");
+
 export const fetchJobMatch = (matchId: number) => api.get(`/jobs/matches/${matchId}`);
 
 export const updateJobMatchStatus = (matchId: number, status: string) =>

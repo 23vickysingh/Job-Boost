@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { useQuery } from "@tanstack/react-query";
-import { fetchProfile, fetchJobMatchStats } from "@/lib/api";
+import { fetchProfile, fetchDashboardData } from "@/lib/api";
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
@@ -38,12 +39,14 @@ import Navbar from '@/components/Navbar';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import JobMatchesList from '@/components/dashboard/JobMatchesList';
 import ApplicationsList from '@/components/dashboard/ApplicationsList';
+import ProfileIncompleteModal from '@/components/ProfileIncompleteModal';
 import { useAuth } from "@/contexts/AuthContext";
 import { JobProvider } from "@/contexts/JobContext";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = React.useState("matches");
   const [portfolioTab, setPortfolioTab] = React.useState("profile");
+  const [showProfileModal, setShowProfileModal] = React.useState(false);
   const { token } = useAuth();
   const navigate = useNavigate();
   
@@ -53,25 +56,63 @@ const Dashboard = () => {
     }
   }, [token, navigate]);
 
+  // Fetch dashboard data with auto job search logic
+  const { data: dashboardResponse, isLoading: dashboardLoading, error: dashboardError } = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: fetchDashboardData,
+    enabled: !!token,
+    retry: 2, // Retry failed requests up to 2 times
+  });
+
+  const dashboardData = dashboardResponse?.data;
+
+  // Handle dashboard error
+  React.useEffect(() => {
+    if (dashboardError && !dashboardLoading) {
+      console.error("Dashboard API error:", dashboardError);
+      // Only show toast if it's not a network/auth error that would redirect
+      if ((dashboardError as any)?.response?.status !== 401 && (dashboardError as any)?.response?.status !== 403) {
+        toast.error("Unable to load dashboard. Please refresh the page.");
+      }
+    }
+  }, [dashboardError, dashboardLoading]);
+
   // Fetch the user's profile with enhanced user information
   const { data: profileResponse, error: profileError } = useQuery({
     queryKey: ["profile"],
     queryFn: fetchProfile,
+    enabled: !!token,
   });
   
   const profile = profileResponse?.data;
 
-  // Fetch job match statistics
-  const { data: jobStats } = useQuery({
-    queryKey: ["jobStats"],
-    queryFn: fetchJobMatchStats,
-  });
-  
-  // Get job statistics from API or use defaults
-  const totalMatches = jobStats?.data?.total_matches || 0;
-  const highRelevanceJobs = jobStats?.data?.high_relevance_jobs || 0;
-  const recentMatches = jobStats?.data?.recent_matches || 0;
-  const appliedJobs = jobStats?.data?.applied_jobs || 0;
+  // Handle dashboard data changes
+  React.useEffect(() => {
+    if (!dashboardData) return;
+
+    if (dashboardData.status === "incomplete_profile") {
+      setShowProfileModal(true);
+    }
+  }, [dashboardData]);
+
+  // Get job statistics from dashboard data or defaults
+  const getJobStats = () => {
+    if (dashboardData?.dashboard_stats) {
+      return dashboardData.dashboard_stats;
+    }
+    return {
+      total_matches: 0,
+      high_relevance_jobs: 0,
+      recent_matches: 0,
+      applied_jobs: 0
+    };
+  };
+
+  const jobStats = getJobStats();
+  const totalMatches = jobStats.total_matches || 0;
+  const highRelevanceJobs = jobStats.high_relevance_jobs || 0;
+  const recentMatches = jobStats.recent_matches || 0;
+  const appliedJobs = jobStats.applied_jobs || 0;
 
   // Profile Section Component
   const ProfileSection = () => (
@@ -773,6 +814,14 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Profile Incomplete Modal */}
+      <ProfileIncompleteModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        needsResume={dashboardData?.needs_resume || false}
+        needsPreferences={dashboardData?.needs_preferences || false}
+      />
     </JobProvider>
   );
 };

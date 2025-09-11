@@ -31,6 +31,7 @@ interface ProfileData {
   company_types?: string[];
   job_requirements?: string;
   preferences_set?: boolean;
+  has_resume?: boolean;
 }
 
 const JobPreferences = () => {
@@ -170,16 +171,24 @@ const JobPreferences = () => {
     }
 
     try {
-      await saveJobPreferences(preferences);
+      const response = await saveJobPreferences(preferences);
       if (isClearing) {
         toast.success('Job preferences cleared successfully!');
       } else {
         toast.success('Job preferences saved successfully!');
       }
       
-      // Navigate based on context
+      // Navigate based on context and resume status
       if (isFirstTime || isFirstTimeSetup) {
-        navigate('/resume-upload');
+        // Check if user already has a resume uploaded
+        if (response.data?.has_resume) {
+          // Resume already uploaded, go directly to dashboard
+          toast.info('Resume already uploaded. Taking you to dashboard.');
+          navigate('/dashboard');
+        } else {
+          // No resume uploaded, go to resume upload page
+          navigate('/resume-upload');
+        }
       } else {
         navigate('/dashboard');
       }
@@ -190,16 +199,30 @@ const JobPreferences = () => {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     setConfirmationDialog({
       isOpen: true,
       title: 'Skip Job Preferences',
       message: 'Are you sure you want to skip job preferences setup? You can configure them later in your dashboard.',
       type: 'warning',
       confirmText: 'Skip',
-      onConfirm: () => {
+      onConfirm: async () => {
         if (isFirstTime || isFirstTimeSetup) {
-          navigate('/resume-upload');
+          try {
+            // Check current profile status to see if resume is already uploaded
+            const profileResponse = await fetchProfile();
+            if (profileResponse.data?.has_resume) {
+              // Resume already uploaded, go directly to dashboard
+              toast.info('Resume already uploaded. Taking you to dashboard.');
+              navigate('/dashboard');
+            } else {
+              // No resume uploaded, go to resume upload page
+              navigate('/resume-upload');
+            }
+          } catch (error) {
+            // If we can't fetch profile, default to resume upload
+            navigate('/resume-upload');
+          }
         } else {
           navigate('/dashboard');
         }

@@ -57,7 +57,7 @@ class JobRelevanceCalculator:
             return await self._fallback_relevance_score(resume_data, job_description, job_title)
         
         if not resume_data or not job_description:
-            return 0.0
+            return 0.1
         
         try:
             # Configure the Gemini model
@@ -159,7 +159,7 @@ class JobRelevanceCalculator:
             relevance_score = max(0.0, min(1.0, relevance_score))  # Ensure score is between 0.0 and 1.0
             
             print(f"Gemini Job Relevance: Score={relevance_score}, Matches={relevance_result.get('key_matches', [])}")
-            print(f"Assessment: {relevance_result.get('overall_assessment', 'No assessment provided')}")
+            # print(f"Assessment: {relevance_result.get('overall_assessment', 'No assessment provided')}")
             
             return relevance_score
             
@@ -237,6 +237,8 @@ class JobRelevanceCalculator:
 
     async def _fallback_relevance_score(self, resume_data: Dict, job_description: str, job_title: str = "") -> float:
         """Fallback relevance scoring when Gemini API is not available."""
+
+        return 0.1
         if not resume_data or not job_description:
             print("Missing resume data or job description for relevance scoring")
             return 0.1  # Return minimum score instead of 0.0

@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import models, schemas
 from database import get_db
 from auth.dependencies import get_current_user
+from tasks.job_search import find_and_match_jobs_for_user
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -15,6 +16,172 @@ router = APIRouter(prefix="/jobs", tags=["Jobs"])
 async def test_endpoint():
     """Test endpoint to check if API is working."""
     return {"message": "API is working", "status": "ok"}
+
+
+@router.get("/dashboard", response_model=schemas.DashboardResponse)
+async def get_dashboard_data(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Dashboard endpoint that checks if job search is needed and triggers it if required.
+    Returns dashboard data with status of job search and profile completion.
+    """
+    try:
+        # Get user profile
+        user_profile = db.query(models.UserProfile).filter(
+            models.UserProfile.user_id == current_user.id
+        ).first()
+        
+        if not user_profile:
+            return {
+                "status": "incomplete_profile",
+                "message": "User profile not found",
+                "needs_preferences": True,
+                "needs_resume": True,
+                "job_search_status": "not_started"
+            }
+        
+        # Check if resume and preferences are set
+        has_resume = user_profile.resume_parsed is not None
+        has_preferences = user_profile.preferences_set and user_profile.query is not None
+        
+        # If either resume or preferences are missing, return incomplete status
+        if not has_resume or not has_preferences:
+            return {
+                "status": "incomplete_profile",
+                "message": "Please complete your profile to get personalized job matches",
+                "needs_preferences": not has_preferences,
+                "needs_resume": not has_resume,
+                "job_search_status": "not_started"
+            }
+        
+        # Both resume and preferences are set, check if job search is needed
+        current_time = datetime.utcnow()
+        needs_job_search = False
+        
+        # Check if last_job_searched is None or older than 24 hours
+        if user_profile.last_job_searched is None:
+            needs_job_search = True
+            search_reason = "first_time"
+        else:
+            try:
+                # Ensure we're comparing datetime objects correctly
+                last_search_time = user_profile.last_job_searched
+                
+                # Handle different datetime types from database
+                if isinstance(last_search_time, str):
+                    # Parse string datetime
+                    last_search_time = datetime.fromisoformat(last_search_time.replace('Z', '+00:00'))
+                elif hasattr(last_search_time, 'date') and not hasattr(last_search_time, 'hour'):
+                    # Convert date to datetime (add time component)
+                    from datetime import time
+                    last_search_time = datetime.combine(last_search_time, time.min)
+                
+                # Ensure both times are timezone-naive for comparison
+                if last_search_time.tzinfo is not None:
+                    last_search_time = last_search_time.replace(tzinfo=None)
+                
+                time_since_last_search = current_time - last_search_time
+                if time_since_last_search > timedelta(hours=24):
+                    needs_job_search = True
+                    search_reason = "outdated"
+                else:
+                    search_reason = "recent"
+            except (TypeError, ValueError, AttributeError) as date_error:
+                print(f"Error handling last_job_searched datetime in dashboard: {date_error}")
+                print(f" =================>       last_job_searched type: {type(user_profile.last_job_searched)}")
+                print(f" =================>       last_job_searched value: {user_profile.last_job_searched}")
+                # If there's an issue with datetime comparison, do not treat as first time
+                needs_job_search = False
+                search_reason = "system_error"
+        
+        if needs_job_search:
+            print(f"Starting job search for user {current_user.id}, reason: {search_reason}")
+            print(f"Current time: {current_time}")
+            print(f"Previous last_job_searched: {user_profile.last_job_searched}")
+            
+            # Update last_job_searched timestamp
+            user_profile.last_job_searched = current_time
+            db.commit()
+            
+            print(f"Updated last_job_searched to: {user_profile.last_job_searched}")
+            
+            # Trigger background job search
+            background_tasks.add_task(find_and_match_jobs_for_user, current_user.id)
+            
+            return {
+                "status": "searching",
+                "message": "Finding the best suitable jobs for you...",
+                "needs_preferences": False,
+                "needs_resume": False,
+                "job_search_status": "in_progress",
+                "search_reason": search_reason
+            }
+        else:
+            # Get dashboard stats
+            dashboard_stats = await get_job_match_stats_internal(db, current_user)
+            
+            return {
+                "status": "ready",
+                "message": "Dashboard ready",
+                "needs_preferences": False,
+                "needs_resume": False,
+                "job_search_status": "completed",
+                "search_reason": search_reason,
+                "last_job_searched": user_profile.last_job_searched.isoformat(),
+                "dashboard_stats": dashboard_stats
+            }
+            
+    except Exception as e:
+        print(f"Error in dashboard endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+async def get_job_match_stats_internal(db: Session, current_user: models.User) -> dict:
+    """Internal function to get dashboard stats without auth dependency."""
+    try:
+        # Total job matches
+        total_matches = db.query(models.JobMatch).filter(
+            models.JobMatch.user_id == current_user.id
+        ).count()
+        
+        # High relevance jobs (>= 80%)
+        high_relevance_jobs = db.query(models.JobMatch).filter(
+            models.JobMatch.user_id == current_user.id,
+            models.JobMatch.relevance_score >= 0.8
+        ).count()
+        
+        # Jobs added in the last 24 hours
+        yesterday = datetime.utcnow() - timedelta(days=1)
+        
+        recent_matches = db.query(models.JobMatch).filter(
+            models.JobMatch.user_id == current_user.id,
+            models.JobMatch.created_at >= yesterday
+        ).count()
+        
+        # Applied jobs count
+        applied_jobs = db.query(models.JobMatch).filter(
+            models.JobMatch.user_id == current_user.id,
+            models.JobMatch.status == models.JobMatchStatus.applied
+        ).count()
+        
+        return {
+            "total_matches": total_matches,
+            "high_relevance_jobs": high_relevance_jobs,
+            "recent_matches": recent_matches,
+            "applied_jobs": applied_jobs
+        }
+        
+    except Exception as e:
+        print(f"Error in get_job_match_stats_internal: {e}")
+        return {
+            "total_matches": 0,
+            "high_relevance_jobs": 0,
+            "recent_matches": 0,
+            "applied_jobs": 0
+        }
 
 
 @router.get("/matches", response_model=List[schemas.JobMatchOut])

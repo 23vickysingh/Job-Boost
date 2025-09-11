@@ -19,7 +19,7 @@ const ResumeUpload = () => {
   const [uploadComplete, setUploadComplete] = useState(false);
   const [isValidFile, setIsValidFile] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  
+
   // Confirmation dialog state
   const [confirmationDialog, setConfirmationDialog] = useState<{
     isOpen: boolean;
@@ -34,7 +34,7 @@ const ResumeUpload = () => {
     message: '',
     type: 'info',
     confirmText: 'Confirm',
-    onConfirm: () => {}
+    onConfirm: () => { }
   });
 
   const handleSkip = () => {
@@ -62,7 +62,7 @@ const ResumeUpload = () => {
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const droppedFile = e.dataTransfer.files[0];
       validateAndSetFile(droppedFile);
@@ -77,27 +77,27 @@ const ResumeUpload = () => {
 
   const validateAndSetFile = (file: File) => {
     const errors: string[] = [];
-    
+
     // Check file type (PDF, DOCX only)
     const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     const validExtensions = ['.pdf', '.docx'];
     const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-    
+
     if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
       errors.push("Please upload a PDF or DOCX file only");
     }
-    
+
     // Check file size (max 1MB)
     const maxSize = 1 * 1024 * 1024; // 1MB in bytes
     if (file.size > maxSize) {
       errors.push(`File size (${(file.size / 1024 / 1024).toFixed(2)} MB) exceeds maximum allowed size of 1 MB`);
     }
-    
+
     if (errors.length > 0) {
       setValidationErrors(errors);
       setIsValidFile(false);
       setFile(file); // Still set the file to show it, but mark as invalid
-      
+
       // Show validation error dialog
       setConfirmationDialog({
         isOpen: true,
@@ -113,7 +113,7 @@ const ResumeUpload = () => {
       });
       return;
     }
-    
+
     // File is valid
     setValidationErrors([]);
     setIsValidFile(true);
@@ -132,35 +132,35 @@ const ResumeUpload = () => {
 
     setIsUploading(true);
     setUploadProgress(0);
-    
+
     try {
       await uploadResume(form, (progress) => {
         // Update progress during upload
-        setUploadProgress(Math.min(progress, 90)); // Keep some progress for processing
+        setUploadProgress(Math.min(progress, 60)); // Keep some progress for processing
       });
-      
+
       // Show processing phase
-      setUploadProgress(95);
+      setUploadProgress(85);
       toast.success("Resume uploaded! Processing with AI...");
-      
+
       // Complete the progress
       setUploadProgress(100);
       setIsUploading(false);
       setUploadComplete(true);
-      
+
       toast.success("Resume uploaded and parsed successfully!");
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
-      
+
     } catch (error: any) {
       setIsUploading(false);
       setUploadProgress(0);
       console.error("Resume upload failed:", error);
-      
+
       // Handle specific error cases
       const errorMessage = error.response?.data?.detail || error.message || "Failed to upload resume";
-      
+
       if (errorMessage.includes("resume is unfit") || errorMessage.includes("not related")) {
         // Show unfit resume dialog
         setConfirmationDialog({
@@ -210,7 +210,7 @@ const ResumeUpload = () => {
     setUploadComplete(false);
     setIsValidFile(false);
     setValidationErrors([]);
-    
+
     // Clear file input
     const fileInput = document.getElementById("resumeInput") as HTMLInputElement;
     if (fileInput) {
@@ -251,22 +251,20 @@ const ResumeUpload = () => {
             {!uploadComplete ? (
               <>
                 <div
-                  className={`border-2 border-dashed rounded-lg p-10 text-center transition-colors ${
-                    isDragging
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-300"
-                  }`}
+                  className={`border-2 border-dashed rounded-lg p-10 text-center transition-colors ${isDragging
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-300"
+                    }`}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
                   <div className="mx-auto flex justify-center mb-4">
                     <Upload
-                      className={`h-12 w-12 ${
-                        isDragging
-                          ? "text-blue-500"
-                          : "text-gray-400"
-                      }`}
+                      className={`h-12 w-12 ${isDragging
+                        ? "text-blue-500"
+                        : "text-gray-400"
+                        }`}
                     />
                   </div>
                   <p className="text-lg font-medium mb-2">
@@ -294,16 +292,14 @@ const ResumeUpload = () => {
 
                 {file && (
                   <div className="mt-6">
-                    <div className={`rounded-lg p-4 flex items-start ${
-                      isValidFile 
-                        ? 'bg-gray-50' 
-                        : 'bg-red-50 border border-red-200'
-                    }`}>
-                      <div className={`flex-shrink-0 p-2 rounded-full mr-4 ${
-                        isValidFile 
-                          ? 'bg-blue-100' 
-                          : 'bg-red-100'
+                    <div className={`rounded-lg p-4 flex items-start ${isValidFile
+                      ? 'bg-gray-50'
+                      : 'bg-red-50 border border-red-200'
                       }`}>
+                      <div className={`flex-shrink-0 p-2 rounded-full mr-4 ${isValidFile
+                        ? 'bg-blue-100'
+                        : 'bg-red-100'
+                        }`}>
                         {isValidFile ? (
                           <FileText className="h-5 w-5 text-blue-600" />
                         ) : (
@@ -311,18 +307,16 @@ const ResumeUpload = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`font-medium truncate ${
-                          isValidFile 
-                            ? 'text-gray-900' 
-                            : 'text-red-900'
-                        }`}>
+                        <p className={`font-medium truncate ${isValidFile
+                          ? 'text-gray-900'
+                          : 'text-red-900'
+                          }`}>
                           {file.name}
                         </p>
-                        <p className={`text-sm ${
-                          isValidFile 
-                            ? 'text-gray-500' 
-                            : 'text-red-600'
-                        }`}>
+                        <p className={`text-sm ${isValidFile
+                          ? 'text-gray-500'
+                          : 'text-red-600'
+                          }`}>
                           {(file.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                         {!isValidFile && validationErrors.length > 0 && (
@@ -357,8 +351,8 @@ const ResumeUpload = () => {
                     )}
 
                     <div className="mt-6 flex justify-end">
-                      <Button 
-                        onClick={handleUpload} 
+                      <Button
+                        onClick={handleUpload}
                         disabled={isUploading || !isValidFile}
                         className={!isValidFile ? 'opacity-50 cursor-not-allowed' : ''}
                       >
@@ -413,7 +407,7 @@ const ResumeUpload = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={confirmationDialog.isOpen}
