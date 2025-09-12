@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON, Boolean, Float, Enum
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON, Boolean, Float, Enum, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -28,6 +28,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String(255), unique=True, nullable=False, index=True)
     password = Column(String(255), nullable=False)
+    name = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # created a one-to-one relationship with UserProfile
@@ -65,6 +66,9 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id = Column(Integer, primary_key=True, index=True)
+    
+    # External API tracking
+    external_id = Column(String(255), unique=True, nullable=True, index=True)  # Track external API job ID
     
     # Essential Fields from JSearch API
     job_id = Column(String(255), unique=True, nullable=False, index=True)
@@ -104,6 +108,11 @@ class JobMatch(Base):
     relevance_score = Column(Float, nullable=False)
     status = Column(Enum(JobMatchStatus), default=JobMatchStatus.pending, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Prevent duplicate job matches for same user-job combination
+    __table_args__ = (
+        UniqueConstraint('user_id', 'job_id', name='unique_user_job_match'),
+    )
     
     # Relationships to easily access User and Job objects
     user = relationship("User", back_populates="job_matches")

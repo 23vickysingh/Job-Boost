@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useQuery } from "@tanstack/react-query";
-import { fetchProfile, fetchDashboardData } from "@/lib/api";
+import { fetchProfile, fetchCompleteProfile, fetchDashboardData } from "@/lib/api";
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -79,8 +79,8 @@ const Dashboard = () => {
 
   // Fetch the user's profile with enhanced user information
   const { data: profileResponse, error: profileError } = useQuery({
-    queryKey: ["profile"],
-    queryFn: fetchProfile,
+    queryKey: ["completeProfile"],
+    queryFn: fetchCompleteProfile,
     enabled: !!token,
   });
   
@@ -126,6 +126,18 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center space-x-3">
+              <User className="h-4 w-4 text-gray-500" />
+              <div>
+                <p className="text-sm text-gray-500">Name</p>
+                <p className="font-medium">
+                  {profile?.user_name 
+                    ? profile.user_name.charAt(0).toUpperCase() + profile.user_name.slice(1).toLowerCase()
+                    : 'Not provided'
+                  }
+                </p>
+              </div>
+            </div>
             <div className="flex items-center space-x-3">
               <Mail className="h-4 w-4 text-gray-500" />
               <div>

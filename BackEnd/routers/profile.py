@@ -358,7 +358,7 @@ async def get_complete_profile(
         "id": profile.id,
         "user_id": profile.user_id,
         "user_email": current_user.user_id,  # user_id field contains email
-        "user_name": None,  # Extract from resume if available
+        "user_name": current_user.name,  # Get name from User model
         "query": profile.query,
         "location": profile.location,
         "mode_of_job": profile.mode_of_job,
@@ -369,15 +369,9 @@ async def get_complete_profile(
         "resume_location": profile.resume_location,
         "resume_text": profile.resume_text,
         "resume_parsed": profile.resume_parsed,
-        "last_updated": profile.last_updated
+        "last_updated": profile.last_updated,
+        "preferences_set": profile.preferences_set,
+        "has_resume": bool(profile.resume_location)
     }
-    
-    # Extract name from resume if available
-    if profile.resume_parsed:
-        try:
-            personal_info = profile.resume_parsed.get("personal_information", {})
-            complete_profile["user_name"] = personal_info.get("name")
-        except (AttributeError, TypeError):
-            pass
     
     return complete_profile

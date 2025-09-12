@@ -55,10 +55,12 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
+    name: str
     password: str
 
 
 class RegistrationRequest(UserBase):
+    name: str
     password: str
 
 
@@ -79,6 +81,7 @@ class PasswordUpdate(BaseModel):
 
 class UserResponse(UserBase):
     id: int
+    name: str
     created_at: datetime
     
     class Config:

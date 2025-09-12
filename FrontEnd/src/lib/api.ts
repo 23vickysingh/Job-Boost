@@ -51,8 +51,8 @@ export default api;
 export const register = (email: string, password: string) =>
   api.post("/user/register", { user_id: email, password });
 
-export const requestRegistration = (email: string, password: string) =>
-  api.post("/user/request-registration", { user_id: email, password });
+export const requestRegistration = (email: string, password: string, name: string) =>
+  api.post("/user/request-registration", { user_id: email, password, name });
 
 export const confirmRegistration = (email: string, otp: string) =>
   api.post("/user/confirm-registration", { user_id: email, otp });

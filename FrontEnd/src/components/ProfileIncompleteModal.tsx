@@ -51,14 +51,14 @@ const ProfileIncompleteModal: React.FC<ProfileIncompleteModalProps> = ({
         title: "Complete Your Profile",
         description: "To get personalized job matches, please upload your resume and set your job preferences.",
         actions: (
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={handleUploadResume} className="flex-1">
-              <FileText className="mr-2 h-4 w-4" />
-              Upload Resume
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <Button onClick={handleUploadResume} className="flex-1 min-w-0">
+              <FileText className="mr-2 h-4 w-4 flex-shrink-0" />
+              <span className="truncate">Upload Resume</span>
             </Button>
-            <Button onClick={handleSetPreferences} variant="outline" className="flex-1">
-              <Settings className="mr-2 h-4 w-4" />
-              Set Preferences
+            <Button onClick={handleSetPreferences} variant="outline" className="flex-1 min-w-0">
+              <Settings className="mr-2 h-4 w-4 flex-shrink-0" />
+              <span className="truncate">Set Preferences</span>
             </Button>
           </div>
         )
@@ -92,7 +92,7 @@ const ProfileIncompleteModal: React.FC<ProfileIncompleteModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg lg:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center text-xl font-semibold">
             <AlertCircle className="mr-3 h-6 w-6 text-orange-500" />
@@ -123,8 +123,10 @@ const ProfileIncompleteModal: React.FC<ProfileIncompleteModalProps> = ({
           </div>
         </div>
 
-        <DialogFooter className="flex flex-col gap-3">
-          {content.actions}
+        <DialogFooter className="flex flex-col gap-3 w-full">
+          <div className="w-full">
+            {content.actions}
+          </div>
           <Button 
             variant="ghost" 
             onClick={onClose}

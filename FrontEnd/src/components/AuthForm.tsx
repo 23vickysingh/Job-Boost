@@ -9,6 +9,7 @@ interface AuthFormProps {
   type: 'signin' | 'signup';
   onSubmit: (e: React.FormEvent) => void;
   defaultValues?: {
+    name?: string;
     email?: string;
     password?: string;
     confirm?: string;
@@ -33,6 +34,20 @@ const AuthForm = ({ type, onSubmit, defaultValues, isLoading }: AuthFormProps) =
       </div>
 
       <form onSubmit={onSubmit} className="space-y-4">
+
+        {!isSignIn && (
+          <div className="space-y-2">
+            <Label htmlFor="name">Full Name</Label>
+            <Input 
+              id="name" 
+              name='name' 
+              type="text" 
+              placeholder="Your full name" 
+              defaultValue={defaultValues?.name || ''}
+              required 
+            />
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>

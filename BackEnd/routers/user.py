@@ -39,6 +39,7 @@ def request_registration(request: schemas.RegistrationRequest, db: Session = Dep
     
     # Store registration data with OTP
     registration_data = {
+        "name": request.name,
         "password": Hash.bcrypt(request.password)
     }
     
@@ -62,11 +63,12 @@ def confirm_registration(request: schemas.RegistrationVerify, db: Session = Depe
     if db.query(models.User).filter(models.User.user_id == request.user_id).first():
         raise HTTPException(status_code=400, detail="User ID already registered")
 
+    name = stored_data.get("name")
     password = stored_data.get("password")
-    if not password:
+    if not name or not password:
         raise HTTPException(status_code=400, detail="Registration data not found")
 
-    new_user = models.User(user_id=request.user_id, password=password)
+    new_user = models.User(user_id=request.user_id, name=name, password=password)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
