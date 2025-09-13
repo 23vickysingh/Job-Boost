@@ -369,6 +369,7 @@ async def get_complete_profile(
         "resume_location": profile.resume_location,
         "resume_text": profile.resume_text,
         "resume_parsed": profile.resume_parsed,
+        "resume_remarks": profile.resume_remarks,
         "last_updated": profile.last_updated,
         "preferences_set": profile.preferences_set,
         "has_resume": bool(profile.resume_location)

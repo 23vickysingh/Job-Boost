@@ -116,14 +116,25 @@ const Dashboard = () => {
 
   // Profile Section Component
   const ProfileSection = () => (
-    <div className="space-y-6">
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center text-lg font-semibold">
-            <User className="mr-2 h-5 w-5 text-blue-600" />
-            Personal Information
-          </CardTitle>
-        </CardHeader>
+    <div className="space-y-6 relative">
+      {/* Floating Update Profile Button */}
+      <Button 
+        onClick={() => navigate('/job-preferences')} 
+        className="absolute top-0 right-4 z-10 shadow-lg"
+        size="sm"
+      >
+        <Edit className="mr-2 h-4 w-4" />
+        Update Profile
+      </Button>
+      
+      <div className="pt-12">
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center text-lg font-semibold">
+              <User className="mr-2 h-5 w-5 text-blue-600" />
+              Personal Information
+            </CardTitle>
+          </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center space-x-3">
@@ -219,21 +230,27 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-          <div className="pt-4 border-t">
-            <Button onClick={() => navigate('/job-preferences')} className="w-full sm:w-auto">
-              <Edit className="mr-2 h-4 w-4" />
-              Update Profile
-            </Button>
-          </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 
   // Resume Section Component
   const ResumeSection = () => (
-    <div className="space-y-6">
-      {profile?.resume_parsed ? (
+    <div className="space-y-6 relative">
+      {/* Floating Update Resume Button */}
+      <Button 
+        onClick={() => navigate('/resume-upload')} 
+        className="absolute top-0 right-4 z-10 shadow-lg"
+        size="sm"
+      >
+        <FileText className="mr-2 h-4 w-4" />
+        Update Resume
+      </Button>
+      
+      <div className="pt-12">
+        {profile?.resume_parsed ? (
         <>
           {/* Personal Info */}
           {profile.resume_parsed.personal_info && (
@@ -506,6 +523,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 
@@ -629,10 +647,7 @@ const Dashboard = () => {
           <CardContent className="text-center py-12">
             <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Analysis Available</h3>
-            <p className="text-gray-500 mb-4">Upload and parse your resume to see AI-powered analysis and recommendations.</p>
-            <Button onClick={() => navigate('/resume-upload')}>
-              Upload Resume
-            </Button>
+            <p className="text-gray-500">Upload and parse your resume to see AI-powered analysis and recommendations.</p>
           </CardContent>
         </Card>
       )}
