@@ -45,7 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (axios.isAxiosError(err) && err.response) {
         toast.error(err.response.data.detail || "Unable to register");
       } else {
-        toast.error("Unable to register");
+        toast.error("User Already Exists or Unable to register");
       }
       throw err;
     }

@@ -19,34 +19,8 @@ import UpdateJobPreferences from "./pages/UpdateJobPreferences";
 import NotFound from "./pages/NotFound";
 import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
-import PageLoader from "@/components/PageLoader";
 import ProtectedRoute from "@/components/ProtectedRoute";
-
-const RouteChangeLoader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const location = useLocation();
-  const [loading, setLoading] = React.useState(false);
-  const firstLoadRef = React.useRef(true);
-
-  React.useEffect(() => {
-    // Scroll to top on route change
-    window.scrollTo(0, 0);
-    
-    if (firstLoadRef.current) {
-      firstLoadRef.current = false;
-      return;
-    }
-    setLoading(true);
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
-  }, [location]);
-
-  return (
-    <>
-      {loading && <PageLoader />}
-      {children}
-    </>
-  );
-};
+import ScrollToTop from "@/components/ScrollToTop";
 
 // Create the client outside of the component
 const queryClient = new QueryClient();
@@ -59,48 +33,47 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <RouteChangeLoader>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/signin" element={<SignIn />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/faq" element={<FAQ />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/personal-info" element={
-                  <ProtectedRoute>
-                    <JobPreferences />
-                  </ProtectedRoute>
-                } />
-                <Route path="/job-preferences" element={
-                  <ProtectedRoute>
-                    <JobPreferences />
-                  </ProtectedRoute>
-                } />
-                <Route path="/update-profile" element={
-                  <ProtectedRoute>
-                    <UpdateJobPreferences />
-                  </ProtectedRoute>
-                } />
-                <Route path="/update-job-preferences" element={
-                  <ProtectedRoute>
-                    <UpdateJobPreferences />
-                  </ProtectedRoute>
-                } />
-                <Route path="/resume-upload" element={
-                  <ProtectedRoute>
-                    <ResumeUpload />
-                  </ProtectedRoute>
-                } />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </RouteChangeLoader>
+            <ScrollToTop />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/personal-info" element={
+                <ProtectedRoute>
+                  <JobPreferences />
+                </ProtectedRoute>
+              } />
+              <Route path="/job-preferences" element={
+                <ProtectedRoute>
+                  <JobPreferences />
+                </ProtectedRoute>
+              } />
+              <Route path="/update-profile" element={
+                <ProtectedRoute>
+                  <UpdateJobPreferences />
+                </ProtectedRoute>
+              } />
+              <Route path="/update-job-preferences" element={
+                <ProtectedRoute>
+                  <UpdateJobPreferences />
+                </ProtectedRoute>
+              } />
+              <Route path="/resume-upload" element={
+                <ProtectedRoute>
+                  <ResumeUpload />
+                </ProtectedRoute>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>

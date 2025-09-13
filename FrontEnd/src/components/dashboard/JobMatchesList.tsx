@@ -6,6 +6,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Plus, 
   Check, 
@@ -18,8 +26,8 @@ import {
   X,
   CheckCircle
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchJobMatches, updateJobMatchStatus } from "@/lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchJobMatches, updateJobMatchStatus, deleteJobMatch } from "@/lib/api";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { useJobs, type JobMatch } from "@/contexts/JobContext";
 import { toast } from "sonner";
@@ -28,8 +36,15 @@ const JobMatchesList: React.FC = () => {
   // Get job management functions from context
   const { addToApplications, removeJobMatch, isJobApplied, isJobRemoved } = useJobs();
   
+  // State for confirmation dialog
+  const [showNotInterestedDialog, setShowNotInterestedDialog] = useState(false);
+  const [selectedJobMatch, setSelectedJobMatch] = useState<JobMatch | null>(null);
+  
+  // Get query client for cache invalidation
+  const queryClient = useQueryClient();
+  
   // Fetch job matches from API
-  const { data: jobMatchesResponse, isLoading, error } = useQuery({
+  const { data: jobMatchesResponse, error } = useQuery({
     queryKey: ["jobMatches"],
     queryFn: () => fetchJobMatches({ limit: 10 }),
   });
@@ -85,9 +100,11 @@ const JobMatchesList: React.FC = () => {
   const handleMoveToApplications = async (jobMatch: JobMatch) => {
     try {
       await addToApplications(jobMatch);
+      // Invalidate and refetch related queries
+      queryClient.invalidateQueries({ queryKey: ["jobMatches"] });
+      queryClient.invalidateQueries({ queryKey: ["jobMatchStats"] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
       toast.success("Job moved to applications successfully!");
-      // Refresh the job matches to update the UI
-      window.location.reload(); // Simple refresh - you could implement more sophisticated state management
     } catch (error) {
       console.error('Failed to move job to applications:', error);
       toast.error("Failed to move job to applications. Please try again.");
@@ -95,50 +112,36 @@ const JobMatchesList: React.FC = () => {
   };
 
   // Handler for removing job from matches
-  const handleNotInterested = async (jobMatchId: number) => {
+  const handleNotInterested = (jobMatch: JobMatch) => {
+    setSelectedJobMatch(jobMatch);
+    setShowNotInterestedDialog(true);
+  };
+
+  // Handler for confirming not interested action
+  const handleConfirmNotInterested = async () => {
+    if (!selectedJobMatch) return;
+    
     try {
-      await updateJobMatchStatus(jobMatchId, 'not_interested');
-      toast.success("Job marked as not interested");
-      // Refresh the job matches to update the UI
-      window.location.reload(); // Simple refresh - you could implement more sophisticated state management
+      await deleteJobMatch(selectedJobMatch.id);
+      // Invalidate and refetch job matches
+      queryClient.invalidateQueries({ queryKey: ["jobMatches"] });
+      queryClient.invalidateQueries({ queryKey: ["jobMatchStats"] });
+      toast.success("Job removed successfully. It won't be shown again.");
     } catch (error) {
-      console.error('Failed to update job status:', error);
-      toast.error("Failed to update job status. Please try again.");
+      console.error('Failed to remove job:', error);
+      toast.error("Failed to remove job. Please try again.");
+    } finally {
+      setShowNotInterestedDialog(false);
+      setSelectedJobMatch(null);
     }
   };
 
   // Show all job matches - filtering by status is now handled by the backend
   const filteredJobMatches = jobMatches;
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Job Matches
-        </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {[...Array(4)].map((_, index) => (
-            <Card key={index} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="space-y-3">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Job Matches
-        </h2>
+  return (
+    <div className="space-y-4">
+      {error && (
         <Card className="border-red-200 dark:border-red-800">
           <CardContent className="p-6 text-center">
             <p className="text-red-600 dark:text-red-400">
@@ -146,55 +149,43 @@ const JobMatchesList: React.FC = () => {
             </p>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full overflow-hidden flex flex-col">
-      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-slate-800/50">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Job Matches ({filteredJobMatches.length})
-        </h2>
-      </div>
+      )}
       
-      {filteredJobMatches.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center space-y-4">
-            <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-              <Bookmark className="w-12 h-12 text-gray-400" />
-            </div>
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                No job matches yet
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                Complete your profile and set job preferences to get personalized job matches.
-              </p>
-              <Button className="inline-flex items-center">
-                <Plus className="mr-2 h-4 w-4" />
-                Complete Profile
-              </Button>
-            </div>
+      {!error && filteredJobMatches.length === 0 ? (
+        <div className="text-center py-8">
+          <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+            <Bookmark className="w-8 h-8 text-gray-400" />
           </div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            No job matches yet
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400">
+            Complete your profile and set job preferences to get personalized job matches.
+          </p>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="space-y-4">
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Found {filteredJobMatches.length} matching jobs
+            </p>
+          </div>
+          
           {filteredJobMatches.map((match) => (
-            <Card key={match.id} className="hover:shadow-lg transition-shadow duration-200">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
+            <Card key={match.id} className="hover:shadow-md transition-shadow duration-200 border-0 bg-gray-50 dark:bg-slate-800/50">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1">
+                    <h3 className="font-semibold text-base text-gray-900 dark:text-white mb-1">
                       {match.job.job_title || 'Job Title Not Available'}
                     </h3>
                     <div className="flex items-center text-gray-600 dark:text-gray-300 mb-2">
-                      <Building className="mr-2 h-4 w-4" />
-                      <span>{match.job.employer_name || 'Company Not Available'}</span>
+                      <Building className="mr-1 h-4 w-4" />
+                      <span className="text-sm">{match.job.employer_name || 'Company Not Available'}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end space-y-2">
-                    <div className={`font-bold text-lg ${getRelevanceColor(match.relevance_score)}`}>
+                  <div className="flex flex-col items-end space-y-1">
+                    <div className={`font-bold text-base ${getRelevanceColor(match.relevance_score)}`}>
                       {formatRelevanceScore(match.relevance_score)}
                     </div>
                     <Badge variant="secondary" className="text-xs">
@@ -203,11 +194,11 @@ const JobMatchesList: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <div className="space-y-1">
                     {match.job.job_city && (
                       <div className="flex items-center text-gray-600 dark:text-gray-300 text-sm">
-                        <MapPin className="mr-2 h-4 w-4" />
+                        <MapPin className="mr-1 h-3 w-3" />
                         <span>
                           {match.job.job_city}
                           {match.job.job_country && `, ${match.job.job_country}`}
@@ -218,18 +209,18 @@ const JobMatchesList: React.FC = () => {
                     
                     {match.job.job_employment_type && (
                       <div className="flex items-center">
-                        <Clock className="mr-2 h-4 w-4 text-gray-400" />
-                        <Badge className={getEmploymentTypeColor(match.job.job_employment_type)}>
+                        <Clock className="mr-1 h-3 w-3 text-gray-400" />
+                        <Badge className={`text-xs ${getEmploymentTypeColor(match.job.job_employment_type)}`}>
                           {match.job.job_employment_type}
                         </Badge>
                       </div>
                     )}
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {match.job.job_posted_at_datetime_utc && (
                       <div className="flex items-center text-gray-600 dark:text-gray-300 text-sm">
-                        <Calendar className="mr-2 h-4 w-4" />
+                        <Calendar className="mr-1 h-3 w-3" />
                         <span>Posted {formatJobPostedDate(match.job.job_posted_at_datetime_utc)}</span>
                       </div>
                     )}
@@ -249,19 +240,19 @@ const JobMatchesList: React.FC = () => {
                 </div>
                 
                 {match.job.job_description && (
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <p className="text-sm text-gray-600 dark:text-gray-300 overflow-hidden" style={{
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: 'vertical'
                     }}>
-                      {match.job.job_description.substring(0, 200)}
-                      {match.job.job_description.length > 200 && '...'}
+                      {match.job.job_description.substring(0, 150)}
+                      {match.job.job_description.length > 150 && '...'}
                     </p>
                   </div>
                 )}
                 
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap gap-2 justify-between items-center">
                   {match.status === 'applied' ? (
                     <Button 
                       variant="outline" 
@@ -269,8 +260,8 @@ const JobMatchesList: React.FC = () => {
                       disabled
                       className="text-green-600 dark:text-green-400 border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-900/20"
                     >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Already Applied
+                      <CheckCircle className="mr-1 h-3 w-3" />
+                      Applied
                     </Button>
                   ) : (
                     <Button 
@@ -279,8 +270,8 @@ const JobMatchesList: React.FC = () => {
                       onClick={() => handleMoveToApplications(match)}
                       className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                     >
-                      <Check className="mr-2 h-4 w-4" />
-                      Move to Applications
+                      <Check className="mr-1 h-3 w-3" />
+                      Add to Applications
                     </Button>
                   )}
                   
@@ -289,10 +280,10 @@ const JobMatchesList: React.FC = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleNotInterested(match.id)}
+                        onClick={() => handleNotInterested(match)}
                         className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                       >
-                        <X className="mr-2 h-4 w-4" />
+                        <X className="mr-1 h-3 w-3" />
                         Not Interested
                       </Button>
                     )}
@@ -302,7 +293,7 @@ const JobMatchesList: React.FC = () => {
                       disabled={!match.job.job_apply_link}
                       className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
-                      <ExternalLink className="mr-2 h-4 w-4" />
+                      <ExternalLink className="mr-1 h-3 w-3" />
                       Apply Now
                     </Button>
                   </div>
@@ -312,6 +303,38 @@ const JobMatchesList: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Not Interested Confirmation Dialog */}
+      <Dialog open={showNotInterestedDialog} onOpenChange={setShowNotInterestedDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Job Match</DialogTitle>
+            <DialogDescription>
+              This job won't be shown again. Are you sure you want to mark this job as not interested?
+            </DialogDescription>
+          </DialogHeader>
+          {selectedJobMatch && (
+            <div className="py-4">
+              <p className="font-medium">{selectedJobMatch.job.job_title}</p>
+              <p className="text-sm text-gray-600">{selectedJobMatch.job.employer_name}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowNotInterestedDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleConfirmNotInterested}
+            >
+              Confirm Not Interested
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

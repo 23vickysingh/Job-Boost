@@ -1,5 +1,4 @@
 import time
-from datetime import datetime
 import random
 import asyncio
 import models
@@ -97,13 +96,8 @@ def find_and_match_jobs_for_user(self, user_id: int):
             if not api_job_id:
                 continue # Skip if the job has no ID
 
-            # Check if this job already exists in our database using external_id
-            api_job_id = job_data.get('job_id')
-            if not api_job_id:
-                print(f"Skipping job without job_id: {job_data.get('job_title', 'Unknown')}")
-                continue
-            
-            existing_job = db.query(models.Job).filter(models.Job.external_id == api_job_id).first()
+            # Check if this job already exists in our database
+            existing_job = db.query(models.Job).filter(models.Job.job_id == api_job_id).first()
             
             if existing_job:
                 # Job already exists, check if user already has a match
@@ -113,7 +107,6 @@ def find_and_match_jobs_for_user(self, user_id: int):
                 ).first()
                 
                 if existing_match:
-                    print(f"User {user.id} already has match for job {existing_job.id} (external_id: {api_job_id})")
                     continue  # User already has this match
                 
                 # Create new match for existing job
@@ -130,15 +123,13 @@ def find_and_match_jobs_for_user(self, user_id: int):
                     relevance_score=relevance_score
                 )
                 db.add(job_match)
-                db.flush()  # Get the ID without committing
-                print(f"Created new job match for existing job. User: {user.id}, Job: {existing_job.id}")
+                db.commit()
                 new_jobs_processed += 1
                 continue
 
             # This is a new job, so we save it to our 'jobs' table
             new_job = models.Job(
-                external_id=api_job_id,  # Store the external API job ID
-                job_id=api_job_id,  # Keep for backward compatibility
+                job_id=api_job_id,
                 employer_name=job_data.get("employer_name"),
                 job_title=job_data.get("job_title"),
                 job_description=job_data.get("job_description"),
@@ -156,7 +147,8 @@ def find_and_match_jobs_for_user(self, user_id: int):
                 job_api_response=job_data # Store the full API response
             )
             db.add(new_job)
-            db.flush()  # Get the new job ID without committing
+            db.commit()
+            db.refresh(new_job)
             
             # Step 5: Calculate actual relevance score using the job relevance service
             relevance_score = await_calculate_relevance_score(
@@ -167,21 +159,13 @@ def find_and_match_jobs_for_user(self, user_id: int):
             )
 
             # Step 6: Save the match and score to the 'job_matches' table
-            try:
-                job_match = models.JobMatch(
-                    user_id=user.id,
-                    job_id=new_job.id,
-                    relevance_score=relevance_score
-                )
-                db.add(job_match)
-                db.flush()  # Check for constraint violations without committing
-                print(f"Created new job match for new job. User: {user.id}, Job: {new_job.id}")
-                
-            except Exception as match_error:
-                print(f"Error creating job match for user {user.id}, job {new_job.id}: {match_error}")
-                # This might happen if there's a race condition or constraint violation
-                db.rollback()
-                continue
+            job_match = models.JobMatch(
+                user_id=user.id,
+                job_id=new_job.id,
+                relevance_score=relevance_score
+            )
+            db.add(job_match)
+            db.commit()
             
             new_jobs_processed += 1
             print(f"Processed and matched new job '{new_job.job_title}' for user {user_id} with score {relevance_score}")
@@ -189,17 +173,6 @@ def find_and_match_jobs_for_user(self, user_id: int):
             # Respect API rate limits
             time.sleep(1) 
 
-        # Commit all changes at once
-        db.commit()
-        print(f"Successfully committed {new_jobs_processed} new job matches for user {user_id}")
-
-        # Update the user's last_job_searched timestamp after successful completion
-        from datetime import datetime
-        user.profile.last_job_searched = datetime.utcnow()
-        db.commit()
-        
-        print(f"Job search completed for user {user_id}. Updated last_job_searched timestamp.")
-        
         return {
             "status": "success", 
             "message": f"Completed job search for user {user_id}. Processed {new_jobs_processed} new jobs.",
@@ -209,17 +182,6 @@ def find_and_match_jobs_for_user(self, user_id: int):
     except Exception as e:
         print(f"FATAL ERROR for user {user_id}: {e}")
         db.rollback() # Rollback any partial database changes
-        
-        # Reset last_job_searched if there was an error to prevent infinite loops
-        try:
-            user = db.query(models.User).filter(models.User.id == user_id).first()
-            if user and user.profile:
-                # Don't update last_job_searched on error, so it will retry later
-                # This prevents infinite loops while still allowing retry attempts
-                print(f"Error occurred, leaving last_job_searched unchanged for retry attempts")
-        except Exception as reset_error:
-            print(f"Error resetting user state: {reset_error}")
-        
         # self.retry(exc=e, countdown=600) # Optional: retry the whole task after 10 minutes
         return {"status": "error", "message": f"Fatal error: {str(e)}"}
     finally:

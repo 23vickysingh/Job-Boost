@@ -1,7 +1,9 @@
 import axios from "axios";
 
+// Create axios instance with retry configuration
 const api = axios.create({
   baseURL: "http://localhost:8000", // FastAPI root
+  timeout: 60000, // 60 second timeout for file uploads and AI processing
 });
 
 // Attach token automatically (if present)
@@ -11,14 +13,29 @@ api.interceptors.request.use((cfg) => {
   return cfg;
 });
 
-// Add response interceptor to handle authentication errors
+// Add response interceptor to handle authentication errors and retries
 api.interceptors.response.use(
   (response) => {
-    console.log(`API Success: ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
+    // console.log(`API Success: ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
     return response;
   },
-  (error) => {
-    console.error(`API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || 'Network Error'}`);
+  async (error) => {
+    const config = error.config;
+    
+    // Retry logic for network errors
+    if (error.code === 'ERR_NETWORK_CHANGED' || error.code === 'NETWORK_ERROR') {
+      if (!config._retry) {
+        config._retry = true;
+        // console.log('Retrying request due to network error...');
+        // Wait 1 second before retry
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return api(config);
+      }
+    }
+    
+    // console.error(`API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || 'Network Error'}`);
+    // console.error('Error details:', error.message);
+    
     if (error.response?.status === 401) {
       // Clear token and redirect to login
       localStorage.removeItem("token");
@@ -30,12 +47,12 @@ api.interceptors.response.use(
 
 export default api;
 
-/* Convenience wrappers */
+// /* Convenience wrappers */
 export const register = (email: string, password: string) =>
   api.post("/user/register", { user_id: email, password });
 
-export const requestRegistration = (email: string, password: string) =>
-  api.post("/user/request-registration", { user_id: email, password });
+export const requestRegistration = (email: string, password: string, name: string) =>
+  api.post("/user/request-registration", { user_id: email, password, name });
 
 export const confirmRegistration = (email: string, otp: string) =>
   api.post("/user/confirm-registration", { user_id: email, otp });
@@ -51,8 +68,16 @@ export const login = (email: string, password: string) =>
 export const saveJobPreferences = (data: Record<string, unknown>) =>
   api.post("/profile/job-preferences", data);
 
-export const uploadResume = (form: FormData) =>
-  api.post("/profile/upload-resume", form);
+export const uploadResume = (form: FormData, onUploadProgress?: (progress: number) => void) =>
+  api.post("/profile/upload-resume", form, {
+    timeout: 120000, // 2 minutes timeout for resume upload and AI processing
+    onUploadProgress: (progressEvent) => {
+      if (onUploadProgress && progressEvent.total) {
+        const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        onUploadProgress(progress);
+      }
+    }
+  });
 
 export const fetchProfile = () => api.get("/profile/");
 
@@ -87,10 +112,16 @@ export const fetchJobMatches = (params?: { limit?: number; offset?: number; min_
 
 export const fetchJobMatchStats = () => api.get("/jobs/matches/stats");
 
+// Dashboard API
+export const fetchDashboardData = () => api.get("/jobs/dashboard");
+
 export const fetchJobMatch = (matchId: number) => api.get(`/jobs/matches/${matchId}`);
 
 export const updateJobMatchStatus = (matchId: number, status: string) =>
   api.put(`/jobs/matches/${matchId}/status?status=${status}`);
+
+export const deleteJobMatch = (matchId: number) =>
+  api.delete(`/jobs/matches/${matchId}`);
 
 export const fetchApplications = (params?: { limit?: number; offset?: number }) =>
   api.get("/jobs/applications", { params });
@@ -111,7 +142,3 @@ export const resolveContactMessage = (contactId: number) =>
   api.put(`/contact/messages/${contactId}/resolve`);
 
 export const fetchContactStats = () => api.get("/contact/stats");
-
-// ATS Score API
-export const fetchATSScore = (forceRefresh: boolean = false) => 
-  api.get(`/profile/ats-score${forceRefresh ? '?force_refresh=true' : ''}`);

@@ -13,49 +13,26 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Sun, Moon, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
-        const [isDarkMode, setIsDarkMode] = useState(false);
         const [isMenuOpen, setIsMenuOpen] = useState(false);
         const location = useLocation();
         const { token, logout } = useAuth();
-
-	useEffect(() => {
-		const isDark = localStorage.getItem("theme") === "dark";
-		setIsDarkMode(isDark);
-		if (isDark) {
-			document.documentElement.classList.add("dark");
-		} else {
-			document.documentElement.classList.remove("dark");
-		}
-	}, []);
-
-	const toggleDarkMode = () => {
-		const newDarkMode = !isDarkMode;
-		setIsDarkMode(newDarkMode);
-		if (newDarkMode) {
-			document.documentElement.classList.add("dark");
-			localStorage.setItem("theme", "dark");
-		} else {
-			document.documentElement.classList.remove("dark");
-			localStorage.setItem("theme", "light");
-		}
-	};
 
 	const toggleMenu = () => {
 		setIsMenuOpen(!isMenuOpen);
 	};
 
 	return (
-		<nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+		<nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex justify-between items-center h-16">
 					<div className="flex items-center">
 						<Link
 							to="/"
-							className="flex items-center space-x-2 text-xl font-bold text-blue-600 dark:text-blue-400"
+							className="flex items-center space-x-2 text-xl font-bold text-blue-600"
 						>
 							<span className="text-2xl">JobBoost</span>
 						</Link>
@@ -64,8 +41,8 @@ const Navbar = () => {
 						<div className="flex items-center space-x-6">
 							<Link
 								to="/"
-								className={`text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 ${location.pathname === "/"
-										? "text-blue-600 dark:text-blue-400"
+								className={`text-gray-600 hover:text-blue-600 ${location.pathname === "/"
+										? "text-blue-600"
 										: ""
 									}`}
 							>
@@ -73,8 +50,8 @@ const Navbar = () => {
 							</Link>
 							<Link
 								to="/about"
-								className={`text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 ${location.pathname === "/about"
-										? "text-blue-600 dark:text-blue-400"
+								className={`text-gray-600 hover:text-blue-600 ${location.pathname === "/about"
+										? "text-blue-600"
 										: ""
 									}`}
 							>
@@ -82,8 +59,8 @@ const Navbar = () => {
 							</Link>
 							<Link
 								to="/faq"
-								className={`text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 ${location.pathname === "/faq"
-										? "text-blue-600 dark:text-blue-400"
+								className={`text-gray-600 hover:text-blue-600 ${location.pathname === "/faq"
+										? "text-blue-600"
 										: ""
 									}`}
 							>
@@ -93,7 +70,7 @@ const Navbar = () => {
                                                                 <>
                                                                         <Link
                                                                                 to="/dashboard"
-                                                                                className={`text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 ${location.pathname === "/dashboard" ? "text-blue-600 dark:text-blue-400" : ""}`}
+                                                                                className={`text-gray-600 hover:text-blue-600 ${location.pathname === "/dashboard" ? "text-blue-600" : ""}`}
                                                                         >
                                                                                 Dashboard
                                                                         </Link>
@@ -129,26 +106,12 @@ const Navbar = () => {
                                                                         </Link>
                                                                 </>
                                                         )}
-                                                        <button
-                                                                onClick={toggleDarkMode}
-                                                                className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-                                                                aria-label="Toggle dark mode"
-                                                        >
-								{isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-							</button>
 						</div>
 					</div>
 					<div className="md:hidden flex items-center">
 						<button
-							onClick={toggleDarkMode}
-							className="p-2 mr-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-							aria-label="Toggle dark mode"
-						>
-							{isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-						</button>
-						<button
 							onClick={toggleMenu}
-							className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+							className="p-2 rounded-full bg-gray-100 text-gray-800"
 							aria-label="Open menu"
 						>
 							{isMenuOpen ? <X size={18} /> : <Menu size={18} />}
@@ -159,12 +122,12 @@ const Navbar = () => {
 			{/* Mobile menu */}
 			{isMenuOpen && (
 				<div className="md:hidden">
-					<div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white dark:bg-slate-900 shadow-lg animate-fade-down">
+					<div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg animate-fade-down">
 						<Link
 							to="/about"
 							className={`block px-3 py-2 rounded-md text-base font-medium ${location.pathname === "/about"
-									? "text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800"
-									: "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+									? "text-blue-600 bg-gray-100"
+									: "text-gray-700 hover:bg-gray-100"
 								}`}
 							onClick={toggleMenu}
 						>
@@ -174,7 +137,7 @@ const Navbar = () => {
                                                         <>
                                                                 <Link
                                                                         to="/dashboard"
-                                                                        className={`block px-3 py-2 rounded-md text-base font-medium ${location.pathname === "/dashboard" ? "text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"}`}
+                                                                        className={`block px-3 py-2 rounded-md text-base font-medium ${location.pathname === "/dashboard" ? "text-blue-600 bg-gray-100" : "text-gray-700 hover:bg-gray-100"}`}
                                                                         onClick={toggleMenu}
                                                                 >
                                                                         Dashboard
@@ -182,7 +145,7 @@ const Navbar = () => {
                                                                 <AlertDialog>
                                                                         <AlertDialogTrigger asChild>
                                                                                 <button
-                                                                                        className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                                                                        className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100"
                                                                                 >
                                                                                         Sign Out
                                                                                 </button>
@@ -205,7 +168,7 @@ const Navbar = () => {
                                                         <>
                                                                 <Link
                                                                         to="/signin"
-                                                                        className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                                                        className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100"
                                                                         onClick={toggleMenu}
                                                                 >
                                                                         Sign In

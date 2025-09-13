@@ -57,7 +57,7 @@ class JobRelevanceCalculator:
             return await self._fallback_relevance_score(resume_data, job_description, job_title)
         
         if not resume_data or not job_description:
-            return 0.0
+            return 0.1
         
         try:
             # Configure the Gemini model
@@ -159,7 +159,7 @@ class JobRelevanceCalculator:
             relevance_score = max(0.0, min(1.0, relevance_score))  # Ensure score is between 0.0 and 1.0
             
             print(f"Gemini Job Relevance: Score={relevance_score}, Matches={relevance_result.get('key_matches', [])}")
-            print(f"Assessment: {relevance_result.get('overall_assessment', 'No assessment provided')}")
+            # print(f"Assessment: {relevance_result.get('overall_assessment', 'No assessment provided')}")
             
             return relevance_score
             
@@ -237,67 +237,108 @@ class JobRelevanceCalculator:
 
     async def _fallback_relevance_score(self, resume_data: Dict, job_description: str, job_title: str = "") -> float:
         """Fallback relevance scoring when Gemini API is not available."""
+
+        return 0.1
         if not resume_data or not job_description:
-            return 0.0
+            print("Missing resume data or job description for relevance scoring")
+            return 0.1  # Return minimum score instead of 0.0
         
         score = 0.0
         job_lower = job_description.lower()
         job_title_lower = job_title.lower()
         
-        # Skills matching (40% weight)
+        print(f"Calculating fallback relevance for job: '{job_title}' with resume data keys: {list(resume_data.keys())}")
+        
+        # Initialize score components for debugging
+        skills_score = 0.0
+        exp_score = 0.0
+        edu_score = 0.0
+        keyword_score = 0.0
+        
+        # Skills matching (35% weight)
         skills = resume_data.get('skills', [])
         if skills and isinstance(skills, list):
-            skill_matches = sum(1 for skill in skills if isinstance(skill, str) and skill.lower() in job_lower)
-            skills_score = min(0.4, (skill_matches / max(1, len(skills))) * 0.6)
+            print(f"Resume skills: {skills[:5]}...")  # Show first 5 skills for debugging
+            skill_matches = 0
+            for skill in skills:
+                if isinstance(skill, str) and len(skill.strip()) > 2:
+                    skill_lower = skill.lower().strip()
+                    if skill_lower in job_lower:
+                        skill_matches += 1
+            
+            if len(skills) > 0:
+                skills_score = min(0.35, (skill_matches / len(skills)) * 0.45)  
+            print(f"Skills matching: {skill_matches}/{len(skills)} skills matched, score: {skills_score:.3f}")
             score += skills_score
         
         # Experience matching (30% weight)
         experience = resume_data.get('experience', [])
         if experience and isinstance(experience, list):
+            print(f"Resume experience entries: {len(experience)}")
             exp_score = 0.0
             for exp in experience:
                 if isinstance(exp, dict):
-                    role = exp.get('role', '').lower()
-                    company = exp.get('company', '').lower()
+                    role = str(exp.get('role', '')).lower()
+                    company = str(exp.get('company', '')).lower()
                     description = exp.get('description', [])
                     
                     # Role title similarity
-                    if role and any(word in job_title_lower for word in role.split() if len(word) > 2):
-                        exp_score += 0.1
+                    if role and len(role) > 2:
+                        role_words = set(word for word in role.split() if len(word) > 2)
+                        job_title_words = set(word for word in job_title_lower.split() if len(word) > 2)
+                        if role_words & job_title_words:
+                            exp_score += 0.08
                     
                     # Description keyword matches
-                    if isinstance(description, list):
-                        desc_text = ' '.join(description).lower()
-                        common_words = set(job_lower.split()) & set(desc_text.split())
-                        exp_score += min(0.1, len(common_words) / 100)
+                    if isinstance(description, list) and description:
+                        desc_text = ' '.join(str(d) for d in description).lower()
+                        job_words = set(word for word in job_lower.split() if len(word) > 3)
+                        desc_words = set(word for word in desc_text.split() if len(word) > 3)
+                        common_words = job_words & desc_words
+                        if common_words:
+                            exp_score += min(0.06, len(common_words) / max(20, len(job_words)) * 0.15)
             
-            score += min(0.3, exp_score)
+            exp_score = min(0.30, exp_score)
+            print(f"Experience matching score: {exp_score:.3f}")
+            score += exp_score
         
         # Education relevance (15% weight)
         education = resume_data.get('education', [])
         if education and isinstance(education, list):
-            edu_score = 0.0
             for edu in education:
                 if isinstance(edu, dict):
-                    degree = edu.get('degree', '').lower()
-                    # Basic education relevance check
-                    if any(word in job_lower for word in degree.split() if len(word) > 3):
-                        edu_score += 0.05
-            score += min(0.15, edu_score)
+                    degree = str(edu.get('degree', '')).lower()
+                    if degree and len(degree) > 3:
+                        # Check for relevant degree keywords in job description
+                        degree_words = set(word for word in degree.split() if len(word) > 3)
+                        job_words = set(word for word in job_lower.split() if len(word) > 3)
+                        if degree_words & job_words:
+                            edu_score += 0.08
+            
+            edu_score = min(0.15, edu_score)
+            print(f"Education matching score: {edu_score:.3f}")
+            score += edu_score
         
-        # General keyword matching (15% weight)
+        # General keyword matching (20% weight)
         resume_text = str(resume_data).lower()
         job_words = set(word for word in job_lower.split() if len(word) > 3)
         resume_words = set(word for word in resume_text.split() if len(word) > 3)
         common_words = job_words & resume_words
         
-        keyword_score = min(0.15, len(common_words) / max(1, len(job_words)) * 0.15)
+        if len(job_words) > 0:
+            keyword_score = min(0.20, len(common_words) / len(job_words) * 0.25)
+        
+        print(f"Keyword matching: {len(common_words)}/{len(job_words)} words matched, score: {keyword_score:.3f}")
         score += keyword_score
         
-        # Ensure reasonable range
-        final_score = max(0.1, min(0.85, score))
+        # Add base score to ensure no zero scores for valid matches
+        base_score = 0.15  # Every valid job-resume pair gets at least 15%
+        final_score = base_score + score
         
-        print(f"Fallback Relevance Score: {final_score:.2f} (Skills: {skills_score:.2f}, Experience: {min(0.3, exp_score):.2f}, Education: {min(0.15, edu_score):.2f}, Keywords: {keyword_score:.2f})")
+        # Ensure realistic range (0.20 to 0.85)
+        final_score = max(0.20, min(0.85, final_score))
+        
+        print(f"Fallback Relevance Score: {final_score:.3f} (Base: {base_score:.3f}, Skills: {skills_score:.3f}, Experience: {exp_score:.3f}, Education: {edu_score:.3f}, Keywords: {keyword_score:.3f})")
         return final_score
 
 

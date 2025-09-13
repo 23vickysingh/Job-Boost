@@ -13,12 +13,9 @@ def create_celery():
     Creates and configures a Celery application instance.
     This factory pattern is useful for organizing configuration.
     """
-    # Get the Redis URL from environment variables, with a default for local development
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-    
-    # It's good practice to use different Redis DBs for broker and backend
-    broker_url = f"{redis_url}/0"
-    result_backend = f"{redis_url}/1"
+    # Get the Redis URLs from environment variables
+    broker_url = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+    result_backend = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
 
     # Create the Celery application instance
     # The first argument is the name of your project's main module.

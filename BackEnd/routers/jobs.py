@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import models, schemas
 from database import get_db
 from auth.dependencies import get_current_user
+from tasks.job_search import find_and_match_jobs_for_user
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -15,6 +16,172 @@ router = APIRouter(prefix="/jobs", tags=["Jobs"])
 async def test_endpoint():
     """Test endpoint to check if API is working."""
     return {"message": "API is working", "status": "ok"}
+
+
+@router.get("/dashboard", response_model=schemas.DashboardResponse)
+async def get_dashboard_data(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Dashboard endpoint that checks if job search is needed and triggers it if required.
+    Returns dashboard data with status of job search and profile completion.
+    """
+    try:
+        # Get user profile
+        user_profile = db.query(models.UserProfile).filter(
+            models.UserProfile.user_id == current_user.id
+        ).first()
+        
+        if not user_profile:
+            return {
+                "status": "incomplete_profile",
+                "message": "User profile not found",
+                "needs_preferences": True,
+                "needs_resume": True,
+                "job_search_status": "not_started"
+            }
+        
+        # Check if resume and preferences are set
+        has_resume = user_profile.resume_parsed is not None
+        has_preferences = user_profile.preferences_set and user_profile.query is not None
+        
+        # If either resume or preferences are missing, return incomplete status
+        if not has_resume or not has_preferences:
+            return {
+                "status": "incomplete_profile",
+                "message": "Please complete your profile to get personalized job matches",
+                "needs_preferences": not has_preferences,
+                "needs_resume": not has_resume,
+                "job_search_status": "not_started"
+            }
+        
+        # Both resume and preferences are set, check if job search is needed
+        current_time = datetime.utcnow()
+        needs_job_search = False
+        
+        # Check if last_job_searched is None or older than 24 hours
+        if user_profile.last_job_searched is None:
+            needs_job_search = True
+            search_reason = "first_time"
+        else:
+            try:
+                # Ensure we're comparing datetime objects correctly
+                last_search_time = user_profile.last_job_searched
+                
+                # Handle different datetime types from database
+                if isinstance(last_search_time, str):
+                    # Parse string datetime
+                    last_search_time = datetime.fromisoformat(last_search_time.replace('Z', '+00:00'))
+                elif hasattr(last_search_time, 'date') and not hasattr(last_search_time, 'hour'):
+                    # Convert date to datetime (add time component)
+                    from datetime import time
+                    last_search_time = datetime.combine(last_search_time, time.min)
+                
+                # Ensure both times are timezone-naive for comparison
+                if last_search_time.tzinfo is not None:
+                    last_search_time = last_search_time.replace(tzinfo=None)
+                
+                time_since_last_search = current_time - last_search_time
+                if time_since_last_search > timedelta(hours=24):
+                    needs_job_search = True
+                    search_reason = "outdated"
+                else:
+                    search_reason = "recent"
+            except (TypeError, ValueError, AttributeError) as date_error:
+                print(f"Error handling last_job_searched datetime in dashboard: {date_error}")
+                print(f" =================>       last_job_searched type: {type(user_profile.last_job_searched)}")
+                print(f" =================>       last_job_searched value: {user_profile.last_job_searched}")
+                # If there's an issue with datetime comparison, do not treat as first time
+                needs_job_search = False
+                search_reason = "system_error"
+        
+        if needs_job_search:
+            print(f"Starting job search for user {current_user.id}, reason: {search_reason}")
+            print(f"Current time: {current_time}")
+            print(f"Previous last_job_searched: {user_profile.last_job_searched}")
+            
+            # Update last_job_searched timestamp
+            user_profile.last_job_searched = current_time
+            db.commit()
+            
+            print(f"Updated last_job_searched to: {user_profile.last_job_searched}")
+            
+            # Trigger background job search
+            background_tasks.add_task(find_and_match_jobs_for_user, current_user.id)
+            
+            return {
+                "status": "searching",
+                "message": "Finding the best suitable jobs for you...",
+                "needs_preferences": False,
+                "needs_resume": False,
+                "job_search_status": "in_progress",
+                "search_reason": search_reason
+            }
+        else:
+            # Get dashboard stats
+            dashboard_stats = await get_job_match_stats_internal(db, current_user)
+            
+            return {
+                "status": "ready",
+                "message": "Dashboard ready",
+                "needs_preferences": False,
+                "needs_resume": False,
+                "job_search_status": "completed",
+                "search_reason": search_reason,
+                "last_job_searched": user_profile.last_job_searched.isoformat(),
+                "dashboard_stats": dashboard_stats
+            }
+            
+    except Exception as e:
+        print(f"Error in dashboard endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+async def get_job_match_stats_internal(db: Session, current_user: models.User) -> dict:
+    """Internal function to get dashboard stats without auth dependency."""
+    try:
+        # Total job matches
+        total_matches = db.query(models.JobMatch).filter(
+            models.JobMatch.user_id == current_user.id
+        ).count()
+        
+        # High relevance jobs (>= 80%)
+        high_relevance_jobs = db.query(models.JobMatch).filter(
+            models.JobMatch.user_id == current_user.id,
+            models.JobMatch.relevance_score >= 0.8
+        ).count()
+        
+        # Jobs added in the last 24 hours
+        yesterday = datetime.utcnow() - timedelta(days=1)
+        
+        recent_matches = db.query(models.JobMatch).filter(
+            models.JobMatch.user_id == current_user.id,
+            models.JobMatch.created_at >= yesterday
+        ).count()
+        
+        # Applied jobs count
+        applied_jobs = db.query(models.JobMatch).filter(
+            models.JobMatch.user_id == current_user.id,
+            models.JobMatch.status == models.JobMatchStatus.applied
+        ).count()
+        
+        return {
+            "total_matches": total_matches,
+            "high_relevance_jobs": high_relevance_jobs,
+            "recent_matches": recent_matches,
+            "applied_jobs": applied_jobs
+        }
+        
+    except Exception as e:
+        print(f"Error in get_job_match_stats_internal: {e}")
+        return {
+            "total_matches": 0,
+            "high_relevance_jobs": 0,
+            "recent_matches": 0,
+            "applied_jobs": 0
+        }
 
 
 @router.get("/matches", response_model=List[schemas.JobMatchOut])
@@ -87,32 +254,11 @@ async def get_job_match_stats(
             models.JobMatch.status == models.JobMatchStatus.applied
         ).count()
         
-        # Get ATS score from user profile
-        user_profile = db.query(models.UserProfile).filter(
-            models.UserProfile.user_id == current_user.id
-        ).first()
-        
-        ats_score = None
-        ats_percentage = 0
-        if user_profile and user_profile.ats_score is not None:
-            ats_score = user_profile.ats_score
-            ats_percentage = int(ats_score * 100)
-        elif user_profile and (user_profile.resume_text or user_profile.resume_parsed):
-            # Calculate ATS score if null but resume exists
-            from services.ats_service import get_or_calculate_ats_score
-            try:
-                ats_score = await get_or_calculate_ats_score(current_user.id, db)
-                ats_percentage = int(ats_score * 100) if ats_score else 0
-            except Exception as e:
-                print(f"Error calculating ATS score in stats: {e}")
-        
         return {
             "total_matches": total_matches,
             "high_relevance_jobs": high_relevance_jobs,
             "recent_matches": recent_matches,
-            "applied_jobs": applied_jobs,
-            "ats_score": ats_score,
-            "ats_percentage": ats_percentage
+            "applied_jobs": applied_jobs
         }
         
     except Exception as e:
@@ -180,6 +326,33 @@ async def update_job_match_status(
         "message": "Job match status updated successfully",
         "match_id": match_id,
         "new_status": status
+    }
+
+
+@router.delete("/matches/{match_id}")
+async def delete_job_match(
+    match_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Delete a job match completely from the database."""
+    
+    # Find the job match
+    job_match = db.query(models.JobMatch).filter(
+        models.JobMatch.id == match_id,
+        models.JobMatch.user_id == current_user.id
+    ).first()
+    
+    if not job_match:
+        raise HTTPException(status_code=404, detail="Job match not found")
+    
+    # Delete the job match
+    db.delete(job_match)
+    db.commit()
+    
+    return {
+        "message": "Job match deleted successfully",
+        "match_id": match_id
     }
 
 
@@ -304,4 +477,77 @@ async def get_high_relevance_jobs(
         raise HTTPException(
             status_code=500,
             detail=f"Error fetching high-relevance jobs: {str(e)}"
+        )
+
+
+@router.post("/matches/fix-zero-scores")
+async def fix_zero_relevance_scores(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Fix job matches that have zero relevance scores."""
+    try:
+        # Find matches with zero or very low relevance scores
+        zero_score_matches = db.query(models.JobMatch).filter(
+            models.JobMatch.user_id == current_user.id,
+            models.JobMatch.relevance_score <= 0.05  # Essentially zero
+        ).options(joinedload(models.JobMatch.job)).all()
+        
+        if not zero_score_matches:
+            return {
+                "message": "No job matches with zero scores found",
+                "fixed_count": 0
+            }
+        
+        # Get user profile for relevance calculation
+        user_profile = db.query(models.UserProfile).filter(
+            models.UserProfile.user_id == current_user.id
+        ).first()
+        
+        if not user_profile or not user_profile.resume_parsed:
+            raise HTTPException(
+                status_code=400,
+                detail="Resume data required for relevance calculation"
+            )
+        
+        from services.job_relevance_service import JobRelevanceCalculator
+        calculator = JobRelevanceCalculator()
+        
+        fixed_count = 0
+        for job_match in zero_score_matches:
+            if job_match.job and job_match.job.job_description:
+                try:
+                    # Calculate new relevance score
+                    new_relevance = await calculator.calculate_relevance_score(
+                        resume_data=user_profile.resume_parsed,
+                        job_description=job_match.job.job_description,
+                        job_title=job_match.job.job_title or "",
+                        job_requirements=job_match.job.job_required_skills or ""
+                    )
+                    
+                    # Update the job match
+                    job_match.relevance_score = new_relevance
+                    fixed_count += 1
+                    
+                    print(f"Fixed relevance score for job '{job_match.job.job_title}': 0.0 -> {new_relevance:.3f}")
+                    
+                except Exception as e:
+                    print(f"Error calculating relevance for job match {job_match.id}: {e}")
+                    continue
+        
+        db.commit()
+        
+        return {
+            "message": f"Successfully fixed {fixed_count} job matches with zero relevance scores",
+            "fixed_count": fixed_count,
+            "total_zero_scores": len(zero_score_matches)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fixing zero relevance scores: {str(e)}"
         )

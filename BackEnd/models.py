@@ -1,21 +1,26 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON, Boolean, Float, Enum
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON, Boolean, Float, Enum, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
 
 from database import Base
 
+# used for status fields in Contact and JobMatch models
 
 class ContactStatus(enum.Enum):
     pending = "pending"
     resolved = "resolved"
 
-
 class JobMatchStatus(enum.Enum):
     pending = "pending"
     applied = "applied"
-    not_interested = "not_interested"
+    not_interested = "not interested"
 
+
+
+
+
+# main tables models
 
 class User(Base):
     __tablename__ = "users"
@@ -23,9 +28,13 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String(255), unique=True, nullable=False, index=True)
     password = Column(String(255), nullable=False)
+    name = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # created a one-to-one relationship with UserProfile
     profile = relationship("UserProfile", back_populates="user", uselist=False)
+
+    # created a one-to-many relationship with JobMatch
     job_matches = relationship("JobMatch", back_populates="user", cascade="all, delete-orphan")
 
 
@@ -44,10 +53,12 @@ class UserProfile(Base):
     resume_location = Column(String(500), nullable=True)  # Path to uploaded resume
     resume_text = Column(Text, nullable=True)  # Raw extracted text from resume
     resume_parsed = Column(JSON, nullable=True)  # Processed/structured data from Gemini AI
-    ats_score = Column(Float, nullable=True)  # ATS score (0.0 to 1.0 or percentage)
-    ats_score_calculated_at = Column(DateTime, nullable=True)  # When ATS score was last calculated
+    resume_remarks = Column(JSON, nullable=True)  # AI analysis with good points, weak points, etc.
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_job_searched = Column(DateTime, nullable=True)  # Track last time job search was performed
+    preferences_set = Column(Boolean, default=False)  # Flag to indicate if preferences are set
 
+    # created the relationship back to User
     user = relationship("User", back_populates="profile")
 
 
@@ -55,6 +66,9 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id = Column(Integer, primary_key=True, index=True)
+    
+    # External API tracking
+    external_id = Column(String(255), unique=True, nullable=True, index=True)  # Track external API job ID
     
     # Essential Fields from JSearch API
     job_id = Column(String(255), unique=True, nullable=False, index=True)
@@ -81,7 +95,7 @@ class Job(Base):
     # Store the full, raw API response for future use or debugging
     job_api_response = Column(JSON, nullable=True)
     
-    # New relationship to JobMatch
+    # created a one-to-many relationship with JobMatch
     matches = relationship("JobMatch", back_populates="job", cascade="all, delete-orphan")
 
 
@@ -94,6 +108,11 @@ class JobMatch(Base):
     relevance_score = Column(Float, nullable=False)
     status = Column(Enum(JobMatchStatus), default=JobMatchStatus.pending, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Prevent duplicate job matches for same user-job combination
+    __table_args__ = (
+        UniqueConstraint('user_id', 'job_id', name='unique_user_job_match'),
+    )
     
     # Relationships to easily access User and Job objects
     user = relationship("User", back_populates="job_matches")

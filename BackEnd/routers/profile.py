@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 
 import models, schemas
-from utils.resume_parser import extract_text_from_upload, parse_resume_with_gemini
+from utils.resume_parser import extract_text_from_upload, parse_resume_with_analysis, validate_file_constraints
 from tasks.job_search import find_and_match_jobs_for_user
 from database import get_db
 from auth.dependencies import get_current_user
@@ -13,40 +13,11 @@ from auth.dependencies import get_current_user
 router = APIRouter(prefix="/profile", tags=["Profile"])
 
 
-@router.get("/test-ats")
-async def test_ats_columns(
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    """Test endpoint to verify ATS columns are working."""
-    try:
-        profile = _get_or_create_profile(db, current_user)
-        
-        # Try to update ATS score fields
-        profile.ats_score = 0.85
-        profile.ats_score_calculated_at = datetime.utcnow()
-        
-        db.commit()
-        db.refresh(profile)
-        
-        return {
-            "message": "ATS columns are working",
-            "ats_score": profile.ats_score,
-            "ats_score_calculated_at": profile.ats_score_calculated_at,
-            "status": "success"
-        }
-    except Exception as e:
-        return {
-            "message": f"ATS columns test failed: {str(e)}",
-            "status": "error"
-        }
-
 
 def _get_or_create_profile(db: Session, user: models.User) -> models.UserProfile:
-    """
-    Retrieves a user's profile from the database. If a profile does not exist,
-    it creates a new one.
-    """
+
+    # Retrieves a user's profile from the database. If a profile does not exist, create a new one.
+    
     profile = (
         db.query(models.UserProfile).filter(models.UserProfile.user_id == user.id).first()
     )
@@ -70,22 +41,93 @@ async def create_job_preferences(
     
     profile = _get_or_create_profile(db, current_user)
 
-    # Update profile with new preferences
-    profile.query = preferences.query
-    profile.location = preferences.location
-    profile.mode_of_job = preferences.mode_of_job
-    profile.work_experience = preferences.work_experience
-    profile.employment_types = preferences.employment_types
-    profile.company_types = preferences.company_types
-    profile.job_requirements = preferences.job_requirements
+    # Check if all required fields are provided
+    required_fields = {
+        'query': preferences.query,
+        'location': preferences.location,
+        'mode_of_job': preferences.mode_of_job,
+        'work_experience': preferences.work_experience,
+        'employment_types': preferences.employment_types
+    }
+    
+    # Check if this is a clear operation (all required fields are empty/None)
+    all_required_empty = all(
+        value is None or 
+        (isinstance(value, str) and value.strip() == "") or
+        (isinstance(value, list) and len(value) == 0)
+        for value in required_fields.values()
+    )
+    
+    if all_required_empty:
+        # Clear all preferences and set preferences_set to False
+        profile.query = None
+        profile.location = None
+        profile.mode_of_job = None
+        profile.work_experience = None
+        profile.employment_types = []
+        profile.company_types = []
+        profile.job_requirements = None
+        profile.preferences_set = False
+    else:
+        # Check if all required fields are filled
+        missing_fields = []
+        if not preferences.query or preferences.query.strip() == "":
+            missing_fields.append("query")
+        if not preferences.location or preferences.location.strip() == "":
+            missing_fields.append("location")
+        if not preferences.mode_of_job or preferences.mode_of_job.strip() == "":
+            missing_fields.append("mode_of_job")
+        if not preferences.work_experience or preferences.work_experience.strip() == "":
+            missing_fields.append("work_experience")
+        if not preferences.employment_types or len(preferences.employment_types) == 0:
+            missing_fields.append("employment_types")
+        
+        if missing_fields:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Missing required fields: {', '.join(missing_fields)}"
+            )
+        
+        # Update profile with new preferences
+        profile.query = preferences.query
+        profile.location = preferences.location
+        profile.mode_of_job = preferences.mode_of_job
+        profile.work_experience = preferences.work_experience
+        profile.employment_types = preferences.employment_types
+        profile.company_types = preferences.company_types
+        profile.job_requirements = preferences.job_requirements
+        profile.preferences_set = True
+    
     profile.last_updated = datetime.utcnow()
     
     db.commit()
     db.refresh(profile)
 
-    find_and_match_jobs_for_user.delay(current_user.id)
+    # Only trigger job search if preferences are set and not cleared
+    # if profile.preferences_set and profile.query and profile.query.strip():
+    #     find_and_match_jobs_for_user.delay(current_user.id)
 
-    return profile
+    # Create response with resume status
+    profile_dict = {
+        "id": profile.id,
+        "user_id": profile.user_id,
+        "query": profile.query,
+        "location": profile.location,
+        "mode_of_job": profile.mode_of_job,
+        "work_experience": profile.work_experience,
+        "employment_types": profile.employment_types or [],
+        "company_types": profile.company_types or [],
+        "job_requirements": profile.job_requirements,
+        "resume_location": profile.resume_location,
+        "resume_text": profile.resume_text,
+        "resume_parsed": profile.resume_parsed,
+        "resume_remarks": profile.resume_remarks,
+        "last_updated": profile.last_updated,
+        "preferences_set": profile.preferences_set,
+        "has_resume": bool(profile.resume_parsed)  # Check if resume is uploaded and parsed
+    }
+
+    return schemas.UserProfileOut(**profile_dict)
 
 
 @router.post("/upload-resume", response_model=schemas.ResumeUploadResponse)
@@ -94,41 +136,86 @@ async def upload_resume(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Upload and parse resume."""
+    """Upload and parse resume with enhanced validation."""
     
-    # Validate file type
-    allowed_extensions = ['.pdf', '.doc', '.docx', '.txt']
-    file_extension = os.path.splitext(resume.filename)[1].lower()
-    
-    if file_extension not in allowed_extensions:
+    # Read file content first for validation
+    try:
+        content = await resume.read()
+    except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail="Invalid file type. Please upload a PDF, DOC, DOCX, or TXT file."
+            detail=f"Failed to read uploaded file: {str(e)}"
+        )
+    
+    # Validate file constraints (size and type)
+    validation_result = validate_file_constraints(content, resume.filename)
+    if not validation_result["valid"]:
+        raise HTTPException(
+            status_code=400,
+            detail=validation_result["errors"][0]  # Return first error
         )
     
     # Create uploads directory if it doesn't exist
     upload_dir = "uploads"
     os.makedirs(upload_dir, exist_ok=True)
     
-    # Save file
+    # Generate file path
     file_path = os.path.join(upload_dir, f"{current_user.id}_{resume.filename}")
     
     try:
-        # Read and save file content
-        content = await resume.read()
+        # Save file
         with open(file_path, "wb") as f:
             f.write(content)
         
         # Extract text from uploaded file
         resume_text = extract_text_from_upload(content, resume.filename)
         
-        # Parse resume with AI
-        parsed_data = await parse_resume_with_gemini(resume_text)
+        if not resume_text or not resume_text.strip():
+            # Clean up file if no text extracted
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise HTTPException(
+                status_code=400,
+                detail="Unable to parse the resume. Make sure to upload a relevant document only."
+            )
         
+        # Parse resume with AI and get analysis
+        print(f"Starting AI parsing and analysis for user {current_user.id}...")
+        result = await parse_resume_with_analysis(resume_text)
+        print(f"AI parsing completed for user {current_user.id}")
+        
+        # Check if resume was deemed unfit
+        if "error" in result and result.get("error") == "resume_unfit":
+            # Clean up file if resume is unfit
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise HTTPException(
+                status_code=400,
+                detail="Resume is unfit or not related to a proper resume. Please upload a valid resume only."
+            )
+        
+        # Check for other errors
+        if "error" in result:
+            # Clean up file if other errors occurred
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise HTTPException(
+                status_code=400,
+                detail=result.get("message", "Failed to parse resume")
+            )
+        
+        # Extract parsed data and analysis
+        parsed_data = result.get("parsed_data", {})
+        analysis = result.get("analysis", {})
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions (our custom validation errors)
+        raise
     except Exception as e:
         # Clean up file if parsing fails
         if os.path.exists(file_path):
             os.remove(file_path)
+        print(f"Resume parsing failed for user {current_user.id}: {str(e)}")
         raise HTTPException(
             status_code=400,
             detail=f"Failed to parse resume: {str(e)}"
@@ -140,21 +227,29 @@ async def upload_resume(
     profile.resume_location = file_path
     profile.resume_text = resume_text
     profile.resume_parsed = parsed_data
+    profile.resume_remarks = analysis
+    profile.last_updated = datetime.utcnow()
     
     db.commit()
     db.refresh(profile)
     
-    # Calculate ATS score after resume upload
-    from services.ats_service import calculate_and_update_ats_score
-    try:
-        import asyncio
-        ats_score = await calculate_and_update_ats_score(current_user.id, db)
-        print(f"Calculated ATS score: {ats_score}")
-    except Exception as e:
-        print(f"Failed to calculate ATS score: {e}")
+    # Trigger job search if user has job preferences set
+    if profile.query and profile.query.strip():
+        try:
+            print(f"Triggering job search for user {current_user.id} after resume upload...")
+            find_and_match_jobs_for_user.delay(current_user.id)
+        except Exception as e:
+            print(f"Failed to trigger job search: {e}")
+            # Don't fail resume upload if job search scheduling fails
     
     return schemas.ResumeUploadResponse(
-        message="Resume uploaded and parsed successfully",
+        message="Resume uploaded and parsed successfully.",
+        filename=resume.filename,
+        status="success"
+    )
+    
+    return schemas.ResumeUploadResponse(
+        message="Resume uploaded and parsed successfully.",
         filename=resume.filename,
         status="success"
     )
@@ -165,20 +260,30 @@ async def get_profile(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Get user profile with ATS score calculation if needed."""
+    """Get user profile."""
     profile = _get_or_create_profile(db, current_user)
     
-    # Calculate ATS score if it's null and we have resume data
-    if (profile.ats_score is None and 
-        (profile.resume_text or profile.resume_parsed)):
-        from services.ats_service import calculate_and_update_ats_score
-        try:
-            ats_score = await calculate_and_update_ats_score(current_user.id, db)
-            print(f"Calculated ATS score for profile fetch: {ats_score}")
-        except Exception as e:
-            print(f"Failed to calculate ATS score in profile fetch: {e}")
+    # Create response with resume status
+    profile_dict = {
+        "id": profile.id,
+        "user_id": profile.user_id,
+        "query": profile.query,
+        "location": profile.location,
+        "mode_of_job": profile.mode_of_job,
+        "work_experience": profile.work_experience,
+        "employment_types": profile.employment_types or [],
+        "company_types": profile.company_types or [],
+        "job_requirements": profile.job_requirements,
+        "resume_location": profile.resume_location,
+        "resume_text": profile.resume_text,
+        "resume_parsed": profile.resume_parsed,
+        "resume_remarks": profile.resume_remarks,
+        "last_updated": profile.last_updated,
+        "preferences_set": profile.preferences_set,
+        "has_resume": bool(profile.resume_parsed)  # Check if resume is uploaded and parsed
+    }
     
-    return profile
+    return schemas.UserProfileOut(**profile_dict)
 
 
 @router.get("/resume-status")
@@ -253,7 +358,7 @@ async def get_complete_profile(
         "id": profile.id,
         "user_id": profile.user_id,
         "user_email": current_user.user_id,  # user_id field contains email
-        "user_name": None,  # Extract from resume if available
+        "user_name": current_user.name,  # Get name from User model
         "query": profile.query,
         "location": profile.location,
         "mode_of_job": profile.mode_of_job,
@@ -264,84 +369,10 @@ async def get_complete_profile(
         "resume_location": profile.resume_location,
         "resume_text": profile.resume_text,
         "resume_parsed": profile.resume_parsed,
-        "last_updated": profile.last_updated
+        "resume_remarks": profile.resume_remarks,
+        "last_updated": profile.last_updated,
+        "preferences_set": profile.preferences_set,
+        "has_resume": bool(profile.resume_location)
     }
-    
-    # Extract name from resume if available
-    if profile.resume_parsed:
-        try:
-            personal_info = profile.resume_parsed.get("personal_information", {})
-            complete_profile["user_name"] = personal_info.get("name")
-        except (AttributeError, TypeError):
-            pass
     
     return complete_profile
-
-
-@router.put("/ats-score")
-async def update_ats_score(
-    ats_score: float,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    """Update user's ATS score."""
-    
-    # Validate ATS score range
-    if not (0.0 <= ats_score <= 1.0):
-        raise HTTPException(status_code=400, detail="ATS score must be between 0.0 and 1.0")
-    
-    profile = _get_or_create_profile(db, current_user)
-    
-    # Update ATS score and timestamp
-    profile.ats_score = ats_score
-    profile.ats_score_calculated_at = datetime.utcnow()
-    profile.last_updated = datetime.utcnow()
-    
-    db.commit()
-    db.refresh(profile)
-    
-    return {
-        "message": "ATS score updated successfully",
-        "ats_score": profile.ats_score,
-        "ats_score_calculated_at": profile.ats_score_calculated_at
-    }
-
-
-@router.get("/ats-score")
-async def get_ats_score(
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    """Get or calculate ATS score for current user."""
-    
-    from services.ats_service import get_or_calculate_ats_score
-    
-    try:
-        ats_score = get_or_calculate_ats_score(current_user.id, db)
-        
-        if ats_score is None:
-            return {
-                "message": "Unable to calculate ATS score. Please upload a resume first.",
-                "ats_score": None,
-                "status": "no_resume"
-            }
-        
-        # Get the updated profile
-        profile = db.query(models.UserProfile).filter(
-            models.UserProfile.user_id == current_user.id
-        ).first()
-        
-        return {
-            "message": "ATS score retrieved successfully",
-            "ats_score": ats_score,
-            "ats_score_calculated_at": profile.ats_score_calculated_at,
-            "ats_percentage": int(ats_score * 100),
-            "status": "success"
-        }
-        
-    except Exception as e:
-        return {
-            "message": f"Error getting ATS score: {str(e)}",
-            "ats_score": None,
-            "status": "error"
-        }

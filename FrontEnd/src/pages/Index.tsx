@@ -116,19 +116,19 @@ const Index = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <TestimonialCard
               content="I was spending hours each day applying for jobs. With JobBoost, I applied to over 50 relevant positions in just a week and landed 5 interviews!"
-              author="Alex Johnson"
+              author="Vishal Jain"
               role="Software Engineer"
               avatarUrl="https://randomuser.me/api/portraits/men/32.jpg"
             />
             <TestimonialCard
               content="The automated job matching saved my time and mental energy during my job search. I landed a position that pays 30% more than my previous role."
-              author="Sarah Williams"
+              author="Lakshay Gupta"
               role="Marketing Manager"
               avatarUrl="https://randomuser.me/api/portraits/women/44.jpg"
             />
             <TestimonialCard
               content="As a recent graduate, I was overwhelmed by the job market. JobBoost helped me find entry-level positions that actually matched my skills and interests."
-              author="Kevin Zhang"
+              author="RT Kush Kumar"
               role="Data Analyst"
               avatarUrl="https://randomuser.me/api/portraits/men/36.jpg"
             />

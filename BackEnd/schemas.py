@@ -55,10 +55,12 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
+    name: str
     password: str
 
 
 class RegistrationRequest(UserBase):
+    name: str
     password: str
 
 
@@ -79,6 +81,7 @@ class PasswordUpdate(BaseModel):
 
 class UserResponse(UserBase):
     id: int
+    name: str
     created_at: datetime
     
     class Config:
@@ -130,14 +133,15 @@ class UserProfileBase(BaseModel):
     resume_location: Optional[str] = None
     resume_text: Optional[str] = None
     resume_parsed: Optional[Dict[str, Any]] = None
-    ats_score: Optional[float] = None
-    ats_score_calculated_at: Optional[datetime] = None
+    resume_remarks: Optional[Dict[str, Any]] = None
 
 
 class UserProfileOut(UserProfileBase):
     id: int
     user_id: int
     last_updated: datetime
+    preferences_set: bool
+    has_resume: bool = False  # Add resume status indicator
     
     class Config:
         from_attributes = True
@@ -243,8 +247,17 @@ class DashboardStats(BaseModel):
     high_relevance_jobs: int 
     recent_matches: int
     applied_jobs: int
-    ats_score: Optional[float] = None
-    ats_percentage: int = 0
+
+
+class DashboardResponse(BaseModel):
+    status: str  # "incomplete_profile", "searching", "ready"
+    message: str
+    needs_preferences: bool
+    needs_resume: bool
+    job_search_status: str  # "not_started", "in_progress", "completed"
+    search_reason: Optional[str] = None  # "first_time", "outdated", "recent"
+    last_job_searched: Optional[str] = None
+    dashboard_stats: Optional[DashboardStats] = None
 
 
 # ---------------- Job Relevance Schemas ----------------

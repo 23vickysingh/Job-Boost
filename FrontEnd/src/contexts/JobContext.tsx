@@ -94,13 +94,12 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       setAppliedJobIds(prev => new Set(prev.add(jobMatch.job.job_id)));
     } catch (error) {
       console.error('Failed to update job match status:', error);
-      throw error; // Re-throw to handle in component
+      throw error;
     }
   };
 
   const removeApplication = (applicationId: number) => {
     setApplications(prev => prev.filter(app => app.id !== applicationId));
-    // Find the application to get its job_id and remove from applied set
     const appToRemove = applications.find(app => app.id === applicationId);
     if (appToRemove) {
       setAppliedJobIds(prev => {

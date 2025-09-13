@@ -16,6 +16,6 @@ google-generativeai
 python-dotenv
 PyMuPDF
 python-docx
-asyncio
 celery[redis]
+# asyncio  # REMOVED - Built-in Python module, not a package
 # elasticsearch==8.11.0  # DISABLED - Elasticsearch not in use

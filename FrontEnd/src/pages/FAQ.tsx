@@ -12,7 +12,7 @@ const FAQ = () => {
     },
     {
       question: "What types of resumes are supported?",
-      answer: "We support various resume formats including PDF, DOCX, and TXT files. For best results, we recommend using a clean, well-structured resume with clear sections for experience, education, and skills. ATS-friendly formats are recommended for optimal parsing accuracy."
+      answer: "We support various resume formats including PDF, DOCX, and TXT files. For best results, we recommend using a clean, well-structured resume with clear sections for experience, education, and skills."
     },
     {
       question: "Are there any constraints for resume uploads?",
@@ -28,7 +28,7 @@ const FAQ = () => {
     },
     {
       question: "Is my data secure?",
-      answer: "Yes, we take data security seriously. All uploaded resumes and personal information are encrypted in transit and at rest. We comply with GDPR and other privacy regulations. Your information is only shared with employers when you apply to their positions. For more details, please review our Privacy Policy."
+      answer: "Yes, we take data security seriously. All uploaded resumes and personal information are encrypted in transit and at rest. Your information is only shared with employers when you apply to their positions."
     }
   ];
 
