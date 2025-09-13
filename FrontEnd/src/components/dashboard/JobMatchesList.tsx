@@ -159,13 +159,9 @@ const JobMatchesList: React.FC = () => {
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
             No job matches yet
           </h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
+          <p className="text-gray-500 dark:text-gray-400">
             Complete your profile and set job preferences to get personalized job matches.
           </p>
-          <Button className="inline-flex items-center">
-            <Plus className="mr-2 h-4 w-4" />
-            Complete Profile
-          </Button>
         </div>
       ) : (
         <div className="space-y-4">

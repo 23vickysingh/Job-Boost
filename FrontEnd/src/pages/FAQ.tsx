@@ -28,7 +28,7 @@ const FAQ = () => {
     },
     {
       question: "Is my data secure?",
-      answer: "Yes, we take data security seriously. All uploaded resumes and personal information are encrypted in transit and at rest. We comply with GDPR and other privacy regulations. Your information is only shared with employers when you apply to their positions. For more details, please review our Privacy Policy."
+      answer: "Yes, we take data security seriously. All uploaded resumes and personal information are encrypted in transit and at rest. Your information is only shared with employers when you apply to their positions."
     }
   ];
 
