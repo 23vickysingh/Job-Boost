@@ -85,8 +85,8 @@ const JobMatchesList: React.FC = () => {
   };
 
   const getRelevanceColor = (score: number): string => {
-    if (score >= 0.8) return 'text-green-600 dark:text-green-400 font-bold';
-    if (score >= 0.6) return 'text-orange-600 dark:text-orange-400 font-semibold';
+    if (score >= 0.7) return 'text-green-600 dark:text-green-400 font-bold';
+    if (score >= 0.5) return 'text-orange-600 dark:text-orange-400 font-semibold';
     return 'text-red-600 dark:text-red-400';
   };
 

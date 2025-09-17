@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProfile, fetchCompleteProfile, fetchDashboardData } from "@/lib/api";
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { 
@@ -33,7 +33,8 @@ import {
   Edit,
   Upload,
   Search,
-  Target
+  Target,
+  RefreshCw
 } from "lucide-react";
 import Navbar from '@/components/Navbar';
 import DashboardStats from '@/components/dashboard/DashboardStats';
@@ -49,6 +50,8 @@ const Dashboard = () => {
   const [showProfileModal, setShowProfileModal] = React.useState(false);
   const { token } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryClient = useQueryClient();
   
   React.useEffect(() => {
     if (!token) {
@@ -78,10 +81,17 @@ const Dashboard = () => {
   }, [dashboardError, dashboardLoading]);
 
   // Fetch the user's profile with enhanced user information
-  const { data: profileResponse, error: profileError } = useQuery({
+  const { 
+    data: profileResponse, 
+    error: profileError, 
+    refetch: refetchProfile,
+    isRefetching 
+  } = useQuery({
     queryKey: ["completeProfile"],
     queryFn: fetchCompleteProfile,
     enabled: !!token,
+    refetchOnWindowFocus: true,  // Refetch when user returns to tab
+    staleTime: 30000,            // Consider data stale after 30 seconds
   });
   
   const profile = profileResponse?.data;
@@ -94,6 +104,40 @@ const Dashboard = () => {
       setShowProfileModal(true);
     }
   }, [dashboardData]);
+
+  // Refresh profile data when navigating to dashboard
+  React.useEffect(() => {
+    if (location.pathname === '/dashboard') {
+      // Small delay to ensure navigation is complete
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["completeProfile"] });
+      }, 100);
+    }
+  }, [location.pathname, queryClient]);
+
+  // Handle profile error with retry option
+  React.useEffect(() => {
+    if (profileError) {
+      console.error("Profile fetch error:", profileError);
+      toast.error("Failed to load profile data. Please refresh.", {
+        action: {
+          label: "Retry",
+          onClick: () => refetchProfile()
+        }
+      });
+    }
+  }, [profileError, refetchProfile]);
+
+  // Function to refresh profile data
+  const refreshProfileData = async () => {
+    try {
+      await refetchProfile();
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Profile data refreshed!");
+    } catch (error) {
+      toast.error("Failed to refresh profile data");
+    }
+  };
 
   // Get job statistics from dashboard data or defaults
   const getJobStats = () => {
@@ -673,24 +717,36 @@ const Dashboard = () => {
               {/* Profile Status Card */}
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <User className="h-8 w-8 text-blue-600" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <User className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-500">Profile Status</p>
+                        <p className="text-xl font-semibold text-gray-900">
+                          {(() => {
+                            // Fixed: Use correct field names from CompleteUserProfile schema
+                            const hasResume = profile?.resume_parsed;  // This is the correct field
+                            const hasPreferences = profile?.preferences_set;
+                            
+                            if (!hasResume && !hasPreferences) return 'Incomplete';
+                            if (!hasResume) return 'No Resume Found';
+                            if (!hasPreferences) return 'Preferences Not Set';
+                            return 'Complete';
+                          })()}
+                        </p>
+                      </div>
                     </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">Profile Status</p>
-                      <p className="text-xl font-semibold text-gray-900">
-                        {(() => {
-                          const hasResume = profile?.resume_url || profile?.parsed_resume_data;
-                          const hasPreferences = profile?.preferences_set;
-                          
-                          if (!hasResume && !hasPreferences) return 'Incomplete';
-                          if (!hasResume) return 'No Resume Found';
-                          if (!hasPreferences) return 'Preferences Not set';
-                          return 'Complete';
-                        })()}
-                      </p>
-                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={refreshProfileData}
+                      disabled={isRefetching}
+                      className="ml-2"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -728,7 +784,7 @@ const Dashboard = () => {
                         {highRelevanceJobs}
                       </p>
                       <p className="text-xs text-gray-500">
-                        80%+ match with your profile
+                        70%+ match with your profile
                       </p>
                     </div>
                   </div>

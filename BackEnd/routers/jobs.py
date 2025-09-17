@@ -147,10 +147,10 @@ async def get_job_match_stats_internal(db: Session, current_user: models.User) -
             models.JobMatch.user_id == current_user.id
         ).count()
         
-        # High relevance jobs (>= 80%)
+        # High relevance jobs (>= 70%)
         high_relevance_jobs = db.query(models.JobMatch).filter(
             models.JobMatch.user_id == current_user.id,
-            models.JobMatch.relevance_score >= 0.8
+            models.JobMatch.relevance_score >= 0.7
         ).count()
         
         # Jobs added in the last 24 hours
@@ -233,10 +233,10 @@ async def get_job_match_stats(
             models.JobMatch.user_id == current_user.id
         ).count()
         
-        # High relevance jobs (>= 80%)
+        # High relevance jobs (>= 70%)
         high_relevance_jobs = db.query(models.JobMatch).filter(
             models.JobMatch.user_id == current_user.id,
-            models.JobMatch.relevance_score >= 0.8
+            models.JobMatch.relevance_score >= 0.7
         ).count()
         
         # Jobs added in the last 24 hours
