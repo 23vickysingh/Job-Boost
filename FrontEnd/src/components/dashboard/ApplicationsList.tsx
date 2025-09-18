@@ -58,12 +58,12 @@ const ApplicationsList: React.FC = () => {
     const loadApplications = async () => {
       try {
         setError(null);
-        console.log('Fetching applications...');
+        // console.log('Fetching applications...');
         const response = await fetchApplications();
-        console.log('Applications response:', response);
+        // console.log('Applications response:', response);
         setApplications(response.data || []);
       } catch (err) {
-        console.error('Error fetching applications:', err);
+        // console.error('Error fetching applications:', err);
         setError('Failed to load applications');
         toast.error('Failed to load applications');
       }
@@ -86,9 +86,9 @@ const ApplicationsList: React.FC = () => {
       await deleteJobMatch(selectedApplication.id);
       // Remove from local state
       setApplications(prev => prev.filter(app => app.id !== selectedApplication.id));
-      toast.success("Application closed and removed successfully!");
+      // toast.success("Application closed and removed successfully!");
     } catch (error) {
-      console.error('Error closing application:', error);
+      // console.error('Error closing application:', error);
       toast.error("Failed to close application");
     } finally {
       setShowCloseDialog(false);
