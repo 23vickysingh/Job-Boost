@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create a non-root user and group
-RUN addgroup -S appgroup && adduser -S -G appgroup appuser
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 
 # Change ownership of the app directory so the schedule file can be written
 RUN chown -R appuser:appgroup /app

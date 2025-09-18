@@ -52,15 +52,15 @@ def root():
 
 # endpoint to manually trigger the daily job search task
 
-# @app.post("/trigger-daily-search/")
-# def trigger_search(db: Session = Depends(get_db)):
+@app.post("/trigger-daily-search/")
+def trigger_search(db: Session = Depends(get_db)):
     
-#     print("API endpoint called, triggering Celery task...")
+    print("API endpoint called, triggering Celery task...")
     
-#     # Use .delay() to send the task to the Celery queue
-#     task = job_search_tasks.schedule_daily_job_searches.delay()
+    # Use .delay() to send the task to the Celery queue
+    task = job_search_tasks.schedule_daily_job_searches.delay()
     
-#     return {
-#         "message": "Daily job search task has been triggered.",
-#         "task_id": task.id
-#     }
+    return {
+        "message": "Daily job search task has been triggered.",
+        "task_id": task.id
+    }

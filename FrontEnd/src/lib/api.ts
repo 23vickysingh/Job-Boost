@@ -1,8 +1,16 @@
 import axios from "axios";
 
+// Get API URL from environment variables with fallback
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+// Log the API URL for debugging (only in development)
+if (import.meta.env.DEV) {
+  console.log(`🔗 API URL configured: ${API_URL}`);
+}
+
 // Create axios instance with retry configuration
 const api = axios.create({
-  baseURL: "http://localhost:8000", // FastAPI root
+  baseURL: API_URL, // Use environment variable for API base URL
   timeout: 60000, // 60 second timeout for file uploads and AI processing
 });
 
