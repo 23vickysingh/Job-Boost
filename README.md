@@ -150,6 +150,12 @@ SECRET_KEY=your_secret_key
 - `PUT /profile/preferences` - Update job preferences
 - `POST /profile/upload-resume` - Upload and parse resume
 
+## Improvements
+
+- Login/Signup page verification on frontend
+- Userprofile query to be limited to job title keywords only
+- 
+
 ## License
 
 This project is licensed under the MIT License.

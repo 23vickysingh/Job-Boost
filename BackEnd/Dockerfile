@@ -9,17 +9,14 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # Copy and install requirements
-COPY requirements.txt .
+COPY BackEnd/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
-COPY . .
+COPY BackEnd/ .
 
 # Create a non-root user and group
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
-
-# FIX: Create a directory for Celery Beat schedule and give ownership to appuser
-RUN mkdir /app/celery_data && chown -R appuser:appgroup /app/celery_data
 
 # Change ownership of the rest of the app directory
 RUN chown -R appuser:appgroup /app

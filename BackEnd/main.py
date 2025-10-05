@@ -1,10 +1,11 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
+from fastapi import FastAPI
+# from fastapi import Depends
+# from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-import tasks.job_search as job_search_tasks
-from database import get_db
+# import tasks.job_search as job_search_tasks
+# from database import get_db
 
 from routers import user, profile, jobs, contact
 from database import Base, engine
@@ -43,6 +44,12 @@ def root():
     }
 
 
+
+
+# manual testing routes
+
+
+
 # @app.get("/health")
 # async def health_check():
 #     return {"status": "healthy", "service": "job-boost-api"}
@@ -52,15 +59,15 @@ def root():
 
 # endpoint to manually trigger the daily job search task
 
-@app.post("/trigger-daily-search/")
-def trigger_search(db: Session = Depends(get_db)):
+# @app.post("/trigger-daily-search/")
+# def trigger_search(db: Session = Depends(get_db)):
     
-    print("API endpoint called, triggering Celery task...")
+#     print("API endpoint called, triggering Celery task...")
     
-    # Use .delay() to send the task to the Celery queue
-    task = job_search_tasks.schedule_daily_job_searches.delay()
+#     # Use .delay() to send the task to the Celery queue
+#     task = job_search_tasks.schedule_daily_job_searches.delay()
     
-    return {
-        "message": "Daily job search task has been triggered.",
-        "task_id": task.id
-    }
+#     return {
+#         "message": "Daily job search task has been triggered.",
+#         "task_id": task.id
+#     }

@@ -16,19 +16,6 @@ router = APIRouter(prefix="/user", tags=["User"])
 otp_service = OTPService()
 email_service = EmailService()
 
-# @router.post("/debug-reset-password")
-# async def debug_reset_password(request: Request):
-#     """Debug endpoint to see raw request"""
-#     body = await request.body()
-#     print(f"Raw body: {body}")
-#     try:
-#         import json
-#         data = json.loads(body)
-#         print(f"Parsed JSON: {data}")
-#     except:
-#         print("Failed to parse JSON")
-#     return {"message": "debug complete"}
-
 
 @router.post("/request-registration")
 def request_registration(request: schemas.RegistrationRequest, db: Session = Depends(get_db)):

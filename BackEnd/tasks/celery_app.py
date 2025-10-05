@@ -5,13 +5,15 @@ from celery import Celery
 from celery.schedules import crontab
 from dotenv import load_dotenv
 
+
+
 # Load environment variables from .env file at the very beginning
 load_dotenv()
 
 def create_celery():
     """
     Creates and configures a Celery application instance.
-    This factory pattern is useful for organizing configuration.
+    This factory pattern is useful for organizing configuration
     """
     # Get the Redis URLs from environment variables
     broker_url = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
@@ -43,9 +45,8 @@ def create_celery():
     celery_app.conf.beat_schedule = {
         # A descriptive name for the scheduled task
         'run-daily-job-searches': {
-            # The full path to the task function to be executed
+            # Use the string name of the task to avoid circular import
             'task': 'tasks.job_search.schedule_daily_job_searches',
-            
             # The schedule for execution. crontab(hour=3, minute=0) runs it at 3:00 AM UTC every day.
             'schedule': crontab(hour=3, minute=0),
         },

@@ -91,24 +91,33 @@ def find_and_match_jobs_for_user(self, user_id: int):
 
         # Step 4: Loop through each job, check for duplicates, and process new ones
         new_jobs_processed = 0
+
         for job_data in jobs_from_api:
             api_job_id = job_data.get("job_id")
             if not api_job_id:
-                continue # Skip if the job has no ID
+                print(f"Skipping job without job_id: {job_data.get('job_title', 'Unknown')}")
+                continue
 
-            # Check if this job already exists in our database
-            existing_job = db.query(models.Job).filter(models.Job.job_id == api_job_id).first()
-            
+            # Validate required job fields
+            required_fields = ["employer_name", "job_title", "job_description"]
+            if not all(job_data.get(field) for field in required_fields):
+                print(f"Skipping job {api_job_id} due to missing required fields.")
+                continue
+
+            # Check if this job already exists in our database using external_id
+            existing_job = db.query(models.Job).filter(models.Job.external_id == api_job_id).first()
+
             if existing_job:
                 # Job already exists, check if user already has a match
                 existing_match = db.query(models.JobMatch).filter(
                     models.JobMatch.user_id == user.id,
                     models.JobMatch.job_id == existing_job.id
                 ).first()
-                
+
                 if existing_match:
+                    print(f"User {user.id} already has match for job {existing_job.id} (external_id: {api_job_id})")
                     continue  # User already has this match
-                
+
                 # Create new match for existing job
                 relevance_score = await_calculate_relevance_score(
                     user.profile.resume_parsed,
@@ -116,7 +125,7 @@ def find_and_match_jobs_for_user(self, user_id: int):
                     existing_job.job_title or "",
                     existing_job.job_required_skills or ""
                 )
-                
+
                 job_match = models.JobMatch(
                     user_id=user.id,
                     job_id=existing_job.id,
@@ -129,7 +138,8 @@ def find_and_match_jobs_for_user(self, user_id: int):
 
             # This is a new job, so we save it to our 'jobs' table
             new_job = models.Job(
-                job_id=api_job_id,
+                external_id=api_job_id,  # Store the external API job ID
+                job_id=api_job_id,  # Keep for backward compatibility
                 employer_name=job_data.get("employer_name"),
                 job_title=job_data.get("job_title"),
                 job_description=job_data.get("job_description"),
@@ -147,9 +157,8 @@ def find_and_match_jobs_for_user(self, user_id: int):
                 job_api_response=job_data # Store the full API response
             )
             db.add(new_job)
-            db.commit()
-            db.refresh(new_job)
-            
+            db.flush()  # Get the new job ID without committing
+
             # Step 5: Calculate actual relevance score using the job relevance service
             relevance_score = await_calculate_relevance_score(
                 user.profile.resume_parsed,
@@ -166,12 +175,12 @@ def find_and_match_jobs_for_user(self, user_id: int):
             )
             db.add(job_match)
             db.commit()
-            
+
             new_jobs_processed += 1
             print(f"Processed and matched new job '{new_job.job_title}' for user {user_id} with score {relevance_score}")
-            
+
             # Respect API rate limits
-            time.sleep(1) 
+            time.sleep(1)
 
         return {
             "status": "success", 
@@ -187,62 +196,3 @@ def find_and_match_jobs_for_user(self, user_id: int):
     finally:
         db.close()
 
-
-def await_calculate_relevance_score(resume_data, job_description, job_title, job_requirements):
-    """Helper function to calculate relevance score synchronously in Celery task."""
-    try:
-        from services.job_relevance_service import JobRelevanceCalculator
-        calculator = JobRelevanceCalculator()
-        
-        # Create new event loop for async operation in Celery task
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        try:
-            relevance_score = loop.run_until_complete(
-                calculator.calculate_relevance_score(
-                    resume_data=resume_data,
-                    job_description=job_description,
-                    job_title=job_title,
-                    job_requirements=job_requirements
-                )
-            )
-            print(f"Calculated relevance score: {relevance_score:.3f} for job '{job_title}'")
-            return relevance_score
-        finally:
-            loop.close()
-            
-    except Exception as e:
-        print(f"Error calculating relevance score: {e}, using fallback")
-        # Fallback to a basic score based on job presence
-        return random.uniform(0.25, 0.65)
-                    print(f"Error calculating relevance score: {e}, using fallback")
-                    # Fallback to a basic score based on job presence
-                    relevance_score = random.uniform(0.25, 0.65)
-            else:
-                print(f"Missing resume data or job description for relevance calculation")
-                relevance_score = 0.15  # Minimum score for incomplete data
-
-            # Step 5: Save the match and score to the 'job_matches' table
-            job_match = models.JobMatch(
-                user_id=user.id,
-                job_id=new_job.id,
-                relevance_score=relevance_score
-            )
-            db.add(job_match)
-            db.commit()
-            
-            new_jobs_processed += 1
-            print(f"Processed and matched new job '{new_job.job_title}' for user {user_id} with score {relevance_score}")
-            
-            # Respect API rate limits
-            time.sleep(1) 
-
-        return f"Completed job search for user {user_id}. Processed {new_jobs_processed} new jobs."
-
-    except Exception as e:
-        print(f"FATAL ERROR for user {user_id}: {e}")
-        db.rollback() # Rollback any partial database changes
-        # self.retry(exc=e, countdown=600) # Optional: retry the whole task after 10 minutes
-    finally:
-        db.close()

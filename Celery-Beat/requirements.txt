@@ -1,0 +1,12 @@
+redis
+celery[redis]
+psycopg2-binary
+SQLAlchemy
+python-dotenv
+requests
+google-generativeai
+pdfminer.six
+docx2txt
+PyMuPDF
+python-docx
+email-validator

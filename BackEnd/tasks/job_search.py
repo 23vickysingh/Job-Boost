@@ -92,30 +92,33 @@ def find_and_match_jobs_for_user(self, user_id: int):
 
         # Step 4: Loop through each job, check for duplicates, and process new ones
         new_jobs_processed = 0
+
         for job_data in jobs_from_api:
             api_job_id = job_data.get("job_id")
             if not api_job_id:
-                continue # Skip if the job has no ID
-
-            # Check if this job already exists in our database using external_id
-            api_job_id = job_data.get('job_id')
-            if not api_job_id:
                 print(f"Skipping job without job_id: {job_data.get('job_title', 'Unknown')}")
                 continue
-            
+
+            # Validate required job fields
+            required_fields = ["employer_name", "job_title", "job_description"]
+            if not all(job_data.get(field) for field in required_fields):
+                print(f"Skipping job {api_job_id} due to missing required fields.")
+                continue
+
+            # Check if this job already exists in our database using external_id
             existing_job = db.query(models.Job).filter(models.Job.external_id == api_job_id).first()
-            
+
             if existing_job:
                 # Job already exists, check if user already has a match
                 existing_match = db.query(models.JobMatch).filter(
                     models.JobMatch.user_id == user.id,
                     models.JobMatch.job_id == existing_job.id
                 ).first()
-                
+
                 if existing_match:
                     print(f"User {user.id} already has match for job {existing_job.id} (external_id: {api_job_id})")
                     continue  # User already has this match
-                
+
                 # Create new match for existing job
                 relevance_score = await_calculate_relevance_score(
                     user.profile.resume_parsed,
@@ -123,7 +126,7 @@ def find_and_match_jobs_for_user(self, user_id: int):
                     existing_job.job_title or "",
                     existing_job.job_required_skills or ""
                 )
-                
+
                 job_match = models.JobMatch(
                     user_id=user.id,
                     job_id=existing_job.id,
@@ -157,7 +160,7 @@ def find_and_match_jobs_for_user(self, user_id: int):
             )
             db.add(new_job)
             db.flush()  # Get the new job ID without committing
-            
+
             # Step 5: Calculate actual relevance score using the job relevance service
             relevance_score = await_calculate_relevance_score(
                 user.profile.resume_parsed,
@@ -176,18 +179,18 @@ def find_and_match_jobs_for_user(self, user_id: int):
                 db.add(job_match)
                 db.flush()  # Check for constraint violations without committing
                 print(f"Created new job match for new job. User: {user.id}, Job: {new_job.id}")
-                
+
             except Exception as match_error:
                 print(f"Error creating job match for user {user.id}, job {new_job.id}: {match_error}")
                 # This might happen if there's a race condition or constraint violation
                 db.rollback()
                 continue
-            
+
             new_jobs_processed += 1
             print(f"Processed and matched new job '{new_job.job_title}' for user {user_id} with score {relevance_score}")
-            
+
             # Respect API rate limits
-            time.sleep(1) 
+            time.sleep(1)
 
         # Commit all changes at once
         db.commit()
