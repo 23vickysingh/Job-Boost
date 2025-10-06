@@ -31,6 +31,29 @@ def _get_or_create_profile(db: Session, user: models.User) -> models.UserProfile
     return profile
 
 
+def _create_profile_response(profile: models.UserProfile, user: models.User = None) -> dict:
+    """Helper function to create a consistent user profile dictionary for API responses."""
+    profile_dict = {
+        "id": profile.id,
+        "user_id": profile.user_id,
+        "query": profile.query,
+        "location": profile.location,
+        "mode_of_job": profile.mode_of_job,
+        "work_experience": profile.work_experience,
+        "employment_types": profile.employment_types or [],
+        "company_types": profile.company_types or [],
+        "job_requirements": profile.job_requirements,
+        "resume_location": profile.resume_location,
+        "resume_text": profile.resume_text,
+        "resume_parsed": profile.resume_parsed,
+        "resume_remarks": profile.resume_remarks,
+        "last_updated": profile.last_updated,
+        "preferences_set": profile.preferences_set,
+        "has_resume": bool(profile.resume_parsed)
+    }
+    return profile_dict
+
+
 @router.post("/job-preferences", response_model=schemas.UserProfileOut)
 async def create_job_preferences(
     preferences: schemas.JobPreferencesCreate,
@@ -107,25 +130,7 @@ async def create_job_preferences(
     # if profile.preferences_set and profile.query and profile.query.strip():
     #     find_and_match_jobs_for_user.delay(current_user.id)
 
-    # Create response with resume status
-    profile_dict = {
-        "id": profile.id,
-        "user_id": profile.user_id,
-        "query": profile.query,
-        "location": profile.location,
-        "mode_of_job": profile.mode_of_job,
-        "work_experience": profile.work_experience,
-        "employment_types": profile.employment_types or [],
-        "company_types": profile.company_types or [],
-        "job_requirements": profile.job_requirements,
-        "resume_location": profile.resume_location,
-        "resume_text": profile.resume_text,
-        "resume_parsed": profile.resume_parsed,
-        "resume_remarks": profile.resume_remarks,
-        "last_updated": profile.last_updated,
-        "preferences_set": profile.preferences_set,
-        "has_resume": bool(profile.resume_parsed)  # Check if resume is uploaded and parsed
-    }
+    profile_dict = _create_profile_response(profile)
 
     return schemas.UserProfileOut(**profile_dict)
 
@@ -247,12 +252,6 @@ async def upload_resume(
         filename=resume.filename,
         status="success"
     )
-    
-    return schemas.ResumeUploadResponse(
-        message="Resume uploaded and parsed successfully.",
-        filename=resume.filename,
-        status="success"
-    )
 
 
 @router.get("/", response_model=schemas.UserProfileOut)
@@ -263,25 +262,7 @@ async def get_profile(
     """Get user profile."""
     profile = _get_or_create_profile(db, current_user)
     
-    # Create response with resume status
-    profile_dict = {
-        "id": profile.id,
-        "user_id": profile.user_id,
-        "query": profile.query,
-        "location": profile.location,
-        "mode_of_job": profile.mode_of_job,
-        "work_experience": profile.work_experience,
-        "employment_types": profile.employment_types or [],
-        "company_types": profile.company_types or [],
-        "job_requirements": profile.job_requirements,
-        "resume_location": profile.resume_location,
-        "resume_text": profile.resume_text,
-        "resume_parsed": profile.resume_parsed,
-        "resume_remarks": profile.resume_remarks,
-        "last_updated": profile.last_updated,
-        "preferences_set": profile.preferences_set,
-        "has_resume": bool(profile.resume_parsed)  # Check if resume is uploaded and parsed
-    }
+    profile_dict = _create_profile_response(profile)
     
     return schemas.UserProfileOut(**profile_dict)
 
@@ -338,6 +319,7 @@ async def delete_resume(
     profile.resume_location = None
     profile.resume_text = None
     profile.resume_parsed = None
+    profile.resume_remarks = None
     
     db.commit()
     
@@ -353,26 +335,11 @@ async def get_complete_profile(
     
     profile = _get_or_create_profile(db, current_user)
     
-    # Create complete profile response
-    complete_profile = {
-        "id": profile.id,
-        "user_id": profile.user_id,
-        "user_email": current_user.user_id,  # user_id field contains email
-        "user_name": current_user.name,  # Get name from User model
-        "query": profile.query,
-        "location": profile.location,
-        "mode_of_job": profile.mode_of_job,
-        "work_experience": profile.work_experience,
-        "employment_types": profile.employment_types,
-        "company_types": profile.company_types,
-        "job_requirements": profile.job_requirements,
-        "resume_location": profile.resume_location,
-        "resume_text": profile.resume_text,
-        "resume_parsed": profile.resume_parsed,
-        "resume_remarks": profile.resume_remarks,
-        "last_updated": profile.last_updated,
-        "preferences_set": profile.preferences_set,
-        "has_resume": bool(profile.resume_location)
-    }
+    # Use the helper and add user-specific details
+    complete_profile = _create_profile_response(profile)
+    complete_profile.update({
+        "user_email": current_user.user_id,
+        "user_name": current_user.name
+    })
     
     return complete_profile

@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-import random
 
 import models, schemas
 from database import get_db
@@ -10,7 +8,6 @@ from auth.hashing import Hash
 from auth.tokens import create_access_token
 from services.otp_service import OTPService
 from services.email_service import EmailService
-import os
 
 router = APIRouter(prefix="/user", tags=["User"])
 otp_service = OTPService()
@@ -91,18 +88,6 @@ def request_password_reset(request: schemas.PasswordResetRequest, db: Session = 
         raise HTTPException(status_code=400, detail="Unable to send OTP. Please check your email address.")
     
     return {"message": "OTP sent"}
-
-
-@router.post("/verify-otp")
-def verify_otp(request: schemas.RegistrationVerify, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.user_id == request.user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if not otp_service.is_otp_valid(request.user_id, request.otp, "password_reset"):
-        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
-
-    return {"message": "OTP verified"}
 
 
 @router.post("/reset-password")
